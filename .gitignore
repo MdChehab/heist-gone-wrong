@@ -1,0 +1,132 @@
+# ==============================================================
+#  Heist Gone Wrong - Unreal Engine 5 .gitignore
+# ==============================================================
+
+# Visual Studio 2022 (Windows)
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Generated Visual Studio project files (regenerated from the .uproject
+# via "Generate Visual Studio Project Files", so no need to track them)
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.opendb
+
+# Visual Studio 2022 build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.ipa
+
+# Unreal Engine generated folders
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+Script/
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+
+# Keep Build configs
+!Build/*/
+Build/*/**
+!Build/*/PakBlacklist*.txt
+!Build/**/*.ico
+
+# Baked lighting data (large and regenerable)
+*_BuiltData.uasset
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.stackdump
+
+# Claude / AI tooling (kept out of the repo)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.mcp.json
+
+# --------------------------------------------------------------
+#  Experimental / source-only areas (kept OUT of the repo)
+# --------------------------------------------------------------
+# Trial assets you're still evaluating. Import and experiment here
+# freely; nothing inside is tracked, so uncommitted candidates never
+# cost LFS storage. UE's built-in Developers folder is also excluded
+# from packaged builds by default. Promote a keeper by MOVING it
+# (Content Browser > Move, not copy) into a normal Content path so
+# references are fixed up, then commit it.
+Content/Developers/
+
+# Optional personal sandbox (same idea, your own name). The leading
+# underscore keeps it pinned at the top of the Content Browser.
+Content/_Sandbox/
+
+# Raw source files (the original .fbx / .png / .psd / .wav you
+# downloaded). UE only needs these at import time, not to open or
+# run the project, so they stay out of the repo. Drop source
+# downloads here rather than in a tracked Content path.
+RawContent/
+
+# Don't ignore source and config
+!Source/
+!Config/
