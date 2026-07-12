@@ -30,7 +30,7 @@ class AHeist_Gone_WrongCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
-	
+
 protected:
 
 	/** Jump Input Action */
@@ -49,12 +49,41 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
-public:
+	/** Run Input Action (hold to run) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* RunAction;
 
-	/** Constructor */
-	AHeist_Gone_WrongCharacter();	
+	/** Crouch Input Action (press to toggle crouch) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* CrouchAction;
 
 protected:
+
+	/** Ground speed at the default walking pace */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Stealth", meta=(ClampMin="0", UIMin="0"))
+	float WalkSpeed = 400.f;
+
+	/** Ground speed while the run input is held */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Stealth", meta=(ClampMin="0", UIMin="0"))
+	float RunSpeed = 650.f;
+
+	/** Ground speed while crouched (quieter, slower) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Stealth", meta=(ClampMin="0", UIMin="0"))
+	float CrouchSpeed = 200.f;
+
+	/** True while the run input is held. Exposed for the anim blueprint. */
+	UPROPERTY(BlueprintReadOnly, Category="Movement|Stealth")
+	bool bIsRunning = false;
+
+protected:
+
+	/** Constructor */
+	AHeist_Gone_WrongCharacter();
+
+protected:
+
+	/** Apply designer-tuned movement speeds (constructor values may be overridden in the Blueprint) */
+	virtual void BeginPlay() override;
 
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -85,7 +114,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
+	/** Begins running: raises max ground speed to RunSpeed */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoStartRun();
+
+	/** Stops running: restores max ground speed to WalkSpeed */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoStopRun();
+
+	/** Toggles crouch on or off */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoToggleCrouch();
+
 public:
+
+	/** Returns true while the run input is held */
+	FORCEINLINE bool IsRunning() const { return bIsRunning; }
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

@@ -57,6 +57,28 @@ tuning stays fast because values are exposed to Blueprint/editor.
 un-diffable logic that is hard to review, hard to keep DRY, and painful to merge - a poor
 fit for a project whose grade depends on a documented, analyzable design.
 
+### Three movement speed tiers: crouch / walk / run - 2026-07-11
+**Decision:** The player has three ground-speed tiers, all exposed as `EditAnywhere` on the
+character for in-editor tuning: Walk (default, 400), Run (650), Crouch (200). Implemented by
+extending the template's `AHeist_Gone_WrongCharacter` rather than adding a parallel class.
+**Reasoning:** These three tiers are the stealth risk/reward dial (crouch = slow but quiet,
+run = fast but loud). Extending the existing template character reuses its camera, movement,
+look, and input wiring instead of duplicating them (DRY). Crouch uses UE's built-in
+`Crouch()`/`MaxWalkSpeedCrouched`, so the engine handles the capsule resize and speed cap.
+**Rejected:** A separate new character class (would duplicate the template's setup); a single
+fixed speed (removes the core stealth trade-off).
+
+### Run = hold, Crouch = toggle - 2026-07-11
+**Decision:** Run is a hold input (hold to run, release to return to walk). Crouch is a toggle
+(press to crouch, press again to stand).
+**Reasoning:** Hold-to-run matches stealth-genre convention and can never get stuck "on," so
+the player is at the safe/quiet default whenever they are not actively holding run. Toggle
+crouch lets the player hold a crouched position through a long sneak without keeping a key
+pressed, reducing finger strain and freeing that hand for look/throw.
+**Rejected:** Toggle run (risk of leaving sprint on and getting spotted); hold crouch
+(tiring over long stealth sections). Both are one-line changes if playtesting says otherwise;
+revisit after the first playable stealth pass.
+
 ---
 
 ## Guard AI
