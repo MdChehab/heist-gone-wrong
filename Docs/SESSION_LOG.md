@@ -20,7 +20,10 @@ each session.
 - Ran `git lfs install`.
 - Created this file and `Docs/DECISIONS.md`, seeding DECISIONS.md from the scope/architecture
   decisions in CLAUDE.md plus this session's version-control decisions.
-- First commit and GitHub repo creation are pending developer confirmation at time of writing.
+- First commit made as MdChehab (no AI co-author): 854 files, of which 753 are LFS pointers.
+  Verified `git lfs ls-files` shows all 753 assets as LFS, none in git history as raw blobs.
+- GitHub repo creation + push are pending: `gh` is not installed, so the developer creates the
+  private repo `heist-gone-wrong` on github.com by hand, then runs the provided remote/push commands.
 
 ### Decisions made
 - Recorded three durable version-control decisions in DECISIONS.md: LFS without file locking
