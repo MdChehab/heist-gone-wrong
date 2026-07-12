@@ -22,8 +22,10 @@ each session.
   decisions in CLAUDE.md plus this session's version-control decisions.
 - First commit made as MdChehab (no AI co-author): 854 files, of which 753 are LFS pointers.
   Verified `git lfs ls-files` shows all 753 assets as LFS, none in git history as raw blobs.
-- GitHub repo creation + push are pending: `gh` is not installed, so the developer creates the
-  private repo `heist-gone-wrong` on github.com by hand, then runs the provided remote/push commands.
+- Developer created the GitHub repo `heist-gone-wrong` by hand (gh not installed) and chose to
+  keep it PUBLIC rather than private. No secrets/credentials are in the history (source, config
+  .ini, assets only), so public is acceptable. Added HTTPS remote `origin` and pushed `main`;
+  all 753 LFS objects uploaded (141 MB). `git lfs fsck` OK. Remote: https://github.com/MdChehab/heist-gone-wrong
 
 ### Decisions made
 - Recorded three durable version-control decisions in DECISIONS.md: LFS without file locking
@@ -48,12 +50,12 @@ each session.
   root would be committed. Flagged, not changed (config files are developer-owned).
 
 ### Next steps
-- Get developer confirmation of the staged file list, then make the first commit.
-- Create the private GitHub repo `heist-gone-wrong`, add the remote, and push `main`.
-- Verify LFS with `git lfs ls-files` after the first asset commit (no assets committed yet at
-  setup time, so this will be empty until Content is added).
-- Then begin W1 gameplay work: the C++ Character class (walk/run in all directions, crouch)
-  and the walkable graybox museum level.
+- Version control setup is COMPLETE. Repo is on GitHub (public) with LFS working.
+- Begin W1 gameplay work: the C++ Character class (walk/run in all directions, crouch) and the
+  walkable graybox museum level.
+- Optional cleanup the developer may want later: the template ships three unused variants
+  (Variant_Combat, Variant_Platforming, Variant_SideScrolling) under Source/ and Content/ - trim
+  the ones not needed for the stealth game to reduce noise. Not urgent.
 
 ### Editor-side steps still needed from me
 - None for this session (version-control setup only).
