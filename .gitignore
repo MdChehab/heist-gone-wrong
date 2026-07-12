@@ -12,6 +12,7 @@
 # Generated Visual Studio project files (regenerated from the .uproject
 # via "Generate Visual Studio Project Files", so no need to track them)
 *.sln
+*.slnx
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
