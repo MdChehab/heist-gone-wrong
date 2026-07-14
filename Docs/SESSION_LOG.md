@@ -59,3 +59,67 @@ each session.
 
 ### Editor-side steps still needed from me
 - None for this session (version-control setup only).
+
+---
+
+## [2026-07-11] Session 2 - Player movement (walk/run/crouch) + graybox plan
+**Cycle/Week:** W1 (Setup)
+**Linear issues touched:** (none recorded)
+_Continued directly from Session 1 the same day._
+
+### Done
+- Extended the template character `AHeist_Gone_WrongCharacter` (Source/Heist_Gone_Wrong/
+  Heist_Gone_WrongCharacter.h/.cpp) with three tunable ground-speed tiers and crouch:
+  - `WalkSpeed` (400), `RunSpeed` (650), `CrouchSpeed` (200), all `EditAnywhere` under
+    category "Movement|Stealth".
+  - Run = hold input (DoStartRun/DoStopRun swap MaxWalkSpeed). Crouch = toggle
+    (DoToggleCrouch uses engine Crouch()/UnCrouch(); MaxWalkSpeedCrouched caps crouch speed).
+  - `bCanCrouch` enabled in the constructor; speeds re-applied in BeginPlay so Blueprint
+    overrides take effect. `bIsRunning` bool exposed BlueprintReadOnly for the anim BP.
+  - Added `RunAction` / `CrouchAction` UInputAction slots; bound in SetupPlayerInputComponent.
+- Editor wiring (done by developer, committed): created IA_Run + IA_Crouch, mapped them in
+  IMC_Default (Run=Left Shift, Crouch=Left Ctrl), assigned them on BP_ThirdPersonCharacter.
+- Movement play-tested by developer: walk/run/crouch confirmed working as intended.
+- Committed in two commits (9aff884 code + DECISIONS, b21a056 editor input assets) and pushed.
+- Recorded movement decisions in DECISIONS.md (Player section): three speed tiers; run=hold,
+  crouch=toggle - with reasoning and rejected alternatives.
+- Designed the graybox museum layout (floorplan delivered in chat, not yet built): south
+  Entrance Lobby (player start + exit) -> central Main Gallery Hall (guard patrol loop +
+  cover plinths) -> west Security Office (switch) -> north Artifact Vault (behind a gated
+  door). Loop forces two guard-space crossings out and one tense crossing back with the artifact.
+
+### Decisions made
+- Run = hold, Crouch = toggle (see DECISIONS.md for full reasoning / rejected options).
+- Three speed tiers walk/run/crouch as the stealth risk dial.
+- Kept the template's Jump binding for now; it will be removed once the W2 roll replaces it.
+  Decision: leave it, it costs nothing and gives vertical testing until roll lands.
+- Graybox exit placed near the entrance (loop-back escape) rather than a far-side one-way exit,
+  to create the tense return trip with the artifact and reuse geometry. Not yet built, so
+  revisit if it doesn't feel right in-level.
+
+### Current state
+- Player character has full third-person movement: walk/run in all directions + crouch, all
+  tunable in the editor. Working and tested.
+- Graybox museum level does NOT exist yet - only the layout plan. The level is the next task.
+
+### Known issues / gotchas
+- Crouch shrinks the capsule and slows movement but there is likely NO crouch animation on the
+  mannequin ABP yet, so the character keeps the standing pose while crouched. Cosmetic only;
+  crouch anim is a W3 animation-states task.
+- Running while crouched has no visible effect (MaxWalkSpeedCrouched caps it) - intended.
+- Source files are CRLF; the Edit tool's multi-line matches fail on them, so those two files
+  were rewritten wholesale with Write. Harmless (git normalizes via `* text=auto`), just noting
+  it so a fresh agent doesn't fight partial edits.
+
+### Next steps
+- Build the graybox museum level per the delivered floorplan: L_Museum in Content/Heist/Levels/,
+  4 rooms from LevelPrototyping cubes (wall height ~400cm, doors ~150x230cm, Gallery ~1600x1000),
+  PlayerStart in the Lobby, NavMeshBoundsVolume over the floor + Build Paths, GameMode Override =
+  BP_ThirdPersonGameMode. Optionally drop placeholder cubes at gate/switch/artifact/exit spots.
+  Then commit the .umap (LFS).
+- After the graybox: begin W2 (roll, interaction system, throw mechanic).
+
+### Editor-side steps still needed from me
+- Build and save the graybox level (checklist above), then hand it back for the .umap commit.
+- (Optional, offered but deferred) let Claude stub the placeholder C++ actor classes
+  (AHeistSwitch/AHeistDoor/etc.) when W5 starts, not now.
