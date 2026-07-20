@@ -10,6 +10,11 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Interaction/HeistInteractionComponent.h"
+#include "Interaction/HeistThrowComponent.h"
+#include "Interaction/HeistThrowable.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
 #include "Heist_Gone_Wrong.h"
 
 AHeist_Gone_WrongCharacter::AHeist_Gone_WrongCharacter()
@@ -51,6 +56,12 @@ AHeist_Gone_WrongCharacter::AHeist_Gone_WrongCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	// Interaction scanning (throwables, switch, door, artifact)
+	InteractionComponent = CreateDefaultSubobject<UHeistInteractionComponent>(TEXT("InteractionComponent"));
+
+	// Carrying and launching throwables
+	ThrowComponent = CreateDefaultSubobject<UHeistThrowComponent>(TEXT("ThrowComponent"));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
@@ -87,6 +98,15 @@ void AHeist_Gone_WrongCharacter::SetupPlayerInputComponent(UInputComponent* Play
 
 		// Crouching (toggle)
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoToggleCrouch);
+
+		// Interacting
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoInteract);
+
+		// Throwing
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoThrow);
+
+		// Rolling
+		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoRoll);
 	}
 	else
 	{
@@ -166,6 +186,70 @@ void AHeist_Gone_WrongCharacter::DoStopRun()
 {
 	bIsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void AHeist_Gone_WrongCharacter::DoInteract()
+{
+	// The component owns the "what is in front of me" logic; the character just
+	// forwards the input so the same component can be reused on other actors.
+	if (!IsValid(InteractionComponent))
+	{
+		return;
+	}
+
+	// Throwables route through the throw component so they attach to the carry
+	// socket and can be launched. The cast lives here, in the concrete character,
+	// rather than inside either component, which both stay owner-agnostic.
+	if (AHeistThrowable* Throwable = Cast<AHeistThrowable>(InteractionComponent->GetFocusedActor()))
+	{
+		if (IsValid(ThrowComponent) && ThrowComponent->Carry(Throwable))
+		{
+			return;
+		}
+	}
+
+	InteractionComponent->TryInteract();
+}
+
+void AHeist_Gone_WrongCharacter::DoThrow()
+{
+	if (IsValid(ThrowComponent))
+	{
+		ThrowComponent->ThrowCarried();
+	}
+}
+
+void AHeist_Gone_WrongCharacter::DoRoll()
+{
+	// No rolling mid-roll or in the air.
+	if (bIsRolling || GetCharacterMovement()->IsFalling())
+	{
+		return;
+	}
+
+	// Roll where the player is actually moving; fall back to facing when idle.
+	FVector RollDirection = GetVelocity().GetSafeNormal2D();
+	if (RollDirection.IsNearlyZero())
+	{
+		RollDirection = GetActorForwardVector().GetSafeNormal2D();
+	}
+
+	bIsRolling = true;
+
+	// Programmatic launch for now. Swap to a root-motion montage once a roll
+	// animation exists; the state flag and lockout stay the same either way.
+	LaunchCharacter(RollDirection * RollSpeed, /*bXYOverride*/ true, /*bZOverride*/ false);
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			RollTimerHandle, this, &AHeist_Gone_WrongCharacter::EndRoll, RollDuration, /*bLoop*/ false);
+	}
+}
+
+void AHeist_Gone_WrongCharacter::EndRoll()
+{
+	bIsRolling = false;
 }
 
 void AHeist_Gone_WrongCharacter::DoToggleCrouch()
