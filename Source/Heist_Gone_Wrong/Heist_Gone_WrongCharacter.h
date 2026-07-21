@@ -164,9 +164,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoInteract();
 
-	/** Launches the carried throwable, if any */
+	/** Begins winding up a throw; hold longer to throw further */
 	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoThrow();
+	virtual void DoThrowStart();
+
+	/** Releases the wind-up and launches the carried object */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoThrowRelease();
 
 	/** Rolls in the current movement direction for a quick reposition */
 	UFUNCTION(BlueprintCallable, Category="Input")

@@ -8,6 +8,7 @@
 #include "HeistThrowable.generated.h"
 
 class UStaticMeshComponent;
+class USceneComponent;
 
 /**
  *  A pickup-and-throw object. Picking it up is an interaction; landing after a
@@ -28,13 +29,25 @@ public:
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	//~ End IHeistInteractable
 
-	/** Attach to Carrier and stop simulating physics */
+	/**
+	 *  Attach to AttachParent and stop simulating physics. AttachParent is the
+	 *  carrier's skeletal mesh in practice, so AttachSocket can name a hand
+	 *  socket or bone; attaching to an actor root would ignore the socket.
+	 */
 	UFUNCTION(BlueprintCallable, Category="Throwable")
-	void PickUp(AActor* Carrier, FName AttachSocket);
+	void PickUp(USceneComponent* AttachParent, FName AttachSocket);
 
-	/** Detach, re-enable physics and launch along Direction */
+	/**
+	 *  Detach, teleport to LaunchLocation, re-enable physics and fly along
+	 *  Direction at Speed.
+	 *
+	 *  LaunchLocation must be clear of the thrower's collision: waking physics
+	 *  inside their capsule makes the solver eject the object in an arbitrary
+	 *  direction. Speed is set outright rather than added, so the velocity the
+	 *  animating hand bone imparted while carrying cannot skew the throw.
+	 */
 	UFUNCTION(BlueprintCallable, Category="Throwable")
-	void Throw(const FVector& Direction, float Impulse);
+	void Throw(const FVector& LaunchLocation, const FVector& Direction, float Speed);
 
 	/** True while attached to a carrier */
 	UFUNCTION(BlueprintCallable, Category="Throwable")

@@ -10,8 +10,13 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FHeistFocusChanged, AActor*, NewFocus, const FText&, Prompt);
 
 /**
- *  Scans in front of the owner for the nearest IHeistInteractable and tracks it
- *  as the current focus, then runs the interaction on request.
+ *  Finds the best IHeistInteractable near the owner and tracks it as the
+ *  current focus, then runs the interaction on request.
+ *
+ *  Uses a proximity sphere around the owner rather than a camera-forward trace.
+ *  In third person the objects worth grabbing sit on floors and plinths, below
+ *  a ray cast forward from eye height, so a trace misses the very cases the
+ *  player expects to work (notably standing directly over an object).
  *
  *  Deliberately owner-agnostic: it reads the view point through the generic
  *  AActor::GetActorEyesViewPoint and reports focus changes through a delegate,
@@ -43,13 +48,28 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	/** How far in front of the view the scan reaches */
+	/** Radius around the owner searched for interactables, in cm */
 	UPROPERTY(EditAnywhere, Category="Interaction", meta=(ClampMin="0", UIMin="0"))
-	float InteractionRange = 250.f;
+	float InteractionRange = 200.f;
 
-	/** Sweep radius. Larger is more forgiving to aim. */
+	/**
+	 *  How much the owner must be facing a candidate, as a dot product.
+	 *  1 = dead ahead, 0 = anywhere in the front half, -1 = any direction.
+	 */
+	UPROPERTY(EditAnywhere, Category="Interaction", meta=(ClampMin="-1", ClampMax="1"))
+	float MinFacingDot = 0.f;
+
+	/**
+	 *  Inside this distance the facing test is skipped entirely. Standing on
+	 *  top of an object leaves no meaningful horizontal direction to it, so
+	 *  requiring the player to face it would make close pickups fail.
+	 */
 	UPROPERTY(EditAnywhere, Category="Interaction", meta=(ClampMin="0", UIMin="0"))
-	float InteractionRadius = 40.f;
+	float FacingIgnoreDistance = 90.f;
+
+	/** Block interaction through walls */
+	UPROPERTY(EditAnywhere, Category="Interaction")
+	bool bRequireLineOfSight = true;
 
 	/** Seconds between focus scans. Kept off Tick on purpose. */
 	UPROPERTY(EditAnywhere, Category="Interaction", meta=(ClampMin="0.01", UIMin="0.01"))
@@ -57,8 +77,12 @@ protected:
 
 private:
 
-	/** Timer callback: find the best interactable in front of the owner */
+	/** Timer callback: pick the best interactable near the owner */
 	void ScanForInteractable();
+
+	/** Whether Candidate passes the facing and line-of-sight filters */
+	bool IsCandidateReachable(const AActor* Candidate, const FVector& OwnerLocation,
+		const FVector& ViewLocation, const FVector& OwnerForward) const;
 
 	/** Swap focus and broadcast, ignoring no-op changes */
 	void SetFocus(AActor* NewFocus);

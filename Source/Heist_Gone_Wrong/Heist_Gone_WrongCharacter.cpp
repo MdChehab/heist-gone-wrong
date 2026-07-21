@@ -103,7 +103,10 @@ void AHeist_Gone_WrongCharacter::SetupPlayerInputComponent(UInputComponent* Play
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoInteract);
 
 		// Throwing
-		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoThrow);
+		// Throwing: hold to charge, release to launch
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoThrowStart);
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Completed, this, &AHeist_Gone_WrongCharacter::DoThrowRelease);
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Canceled, this, &AHeist_Gone_WrongCharacter::DoThrowRelease);
 
 		// Rolling
 		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &AHeist_Gone_WrongCharacter::DoRoll);
@@ -211,12 +214,31 @@ void AHeist_Gone_WrongCharacter::DoInteract()
 	InteractionComponent->TryInteract();
 }
 
-void AHeist_Gone_WrongCharacter::DoThrow()
+void AHeist_Gone_WrongCharacter::DoThrowStart()
 {
 	if (IsValid(ThrowComponent))
 	{
-		ThrowComponent->ThrowCarried();
+		ThrowComponent->BeginCharge();
 	}
+}
+
+void AHeist_Gone_WrongCharacter::DoThrowRelease()
+{
+	if (!IsValid(ThrowComponent) || !ThrowComponent->IsCharging())
+	{
+		return;
+	}
+
+	// Face the throw before launching. The character orients to its movement
+	// direction, not the camera, so without this the object leaves sideways
+	// relative to the body and reads as a bug even when the aim is correct.
+	if (const AController* OwningController = GetController())
+	{
+		const FRotator YawOnly(0.f, OwningController->GetControlRotation().Yaw, 0.f);
+		SetActorRotation(YawOnly);
+	}
+
+	ThrowComponent->ReleaseCharge();
 }
 
 void AHeist_Gone_WrongCharacter::DoRoll()

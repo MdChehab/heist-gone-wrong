@@ -81,6 +81,71 @@ revisit after the first playable stealth pass.
 
 ---
 
+## Interaction
+
+### Proximity search, not a camera-forward trace - 2026-07-11
+**Decision:** `UHeistInteractionComponent` finds interactables with a sphere overlap around the
+owner (200cm) and picks the nearest, filtered by a horizontal-only facing test and a
+line-of-sight check. The facing test is skipped entirely within 90cm.
+**Reasoning:** The first implementation swept a sphere forward from eye height along the camera
+direction, on the argument that a trace "reads player intent". That was wrong for this game:
+in third person the objects worth grabbing sit on floors and plinths, below a ray cast forward
+from the head. Standing directly on top of an object was the worst case - the ray sailed over
+it and pickup failed outright. Proximity matches what the player expects: near it, roughly
+facing it, not through a wall. Zeroing Z in the facing test stops an object at the player's
+feet being rejected for being "below" them, and skipping facing at close range handles standing
+over an object, where there is no meaningful horizontal direction to it.
+**Rejected:** Camera-forward sphere trace (fails on low objects, which is most of them);
+pure nearest-without-facing (grabs things behind the player).
+
+### Interaction as an interface plus a component - 2026-07-11
+**Decision:** `IHeistInteractable` is the contract (prompt / can-interact / interact);
+`UHeistInteractionComponent` does the finding. The component reads its owner's viewpoint via
+the generic `AActor::GetActorEyesViewPoint` and reports focus through a delegate.
+**Reasoning:** Switch, door, artifact and throwable are unrelated classes that all need "can be
+used", which is exactly what an interface is for. Keeping detection in a component means the
+logic exists once, and never casting the owner keeps it reusable on any actor.
+**Rejected:** Detection logic on the character (locks it to the player, duplicated later);
+a common base actor class for interactables (they have nothing else in common).
+
+---
+
+## Throwing
+
+### Charged throw: hold to wind up, release to launch - 2026-07-11
+**Decision:** Throw speed lerps from `MinThrowSpeed` (250) to `MaxThrowSpeed` (1700) over
+`MaxChargeTime` (1.1s). A tap is effectively a drop at the player's feet; a full hold lobs
+across the gallery.
+**Reasoning:** Variable range turns one throwable into a range of distraction distances -
+drop it close to pull a guard toward you, or lob it far to pull them away. That covers what
+the "additional throwable types with different noise ranges" stretch goal was for, at a
+fraction of the cost, and it makes the throw a decision rather than a button. Charge progress
+is derived from a press timestamp, so no Tick, and `GetChargeRatio()` is ready for a HUD meter
+in W6 with no rework.
+**Rejected:** Fixed-speed throw (no expressiveness, wastes the mechanic); hold-to-aim with a
+trajectory preview (polish, and a W2 scope risk); several throwable types with fixed ranges
+(more assets and actors for less player control).
+
+### Throw is launched from a muzzle point, with velocity set rather than added - 2026-07-11
+**Decision:** On throw the object is teleported to a point `MuzzleOffset` (100cm) in front of
+the view before physics is re-enabled, and its velocity is set outright.
+**Reasoning:** Both were bugs found in testing. Waking physics while the object still sat
+inside the character's capsule made the solver resolve the penetration by flinging it in a
+random direction. Using `AddImpulse` added the launch to whatever velocity the animating hand
+bone had imparted while carrying, skewing the throw. Setting velocity from a clear launch point
+makes the throw deterministic.
+**Rejected:** `IgnoreActorWhenMoving` to avoid the thrower - it only affects sweep queries, not
+physics solver contacts, so it did not help.
+
+### Character turns to face the throw - 2026-07-11
+**Decision:** On release the character's yaw snaps to the camera yaw before launching.
+**Reasoning:** The character orients to its movement direction, not the camera, so a throw
+aimed with the camera left the body sideways and read as a bug even when the aim was correct.
+**Rejected:** Throwing along the character's facing instead (the player aims with the camera,
+so this would fight the input); a full aim stance (W6 polish).
+
+---
+
 ## Guard AI
 
 _No decisions recorded yet. Planned: NavMesh patrol, event-driven AI Perception (vision

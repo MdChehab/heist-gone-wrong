@@ -43,15 +43,18 @@ bool AHeistThrowable::CanInteract_Implementation(AActor* Interactor) const
 
 void AHeistThrowable::Interact_Implementation(AActor* Interactor)
 {
-	// The carrier decides the socket, so the throwable does not need to know
-	// anything about the actor picking it up. The throw component handles this
-	// in practice; this path keeps the actor usable on its own.
-	PickUp(Interactor, NAME_None);
+	// Fallback path when something picks this up without a throw component:
+	// attach to the interactor's root with no socket. UHeistThrowComponent
+	// supplies the skeletal mesh and hand socket instead.
+	if (IsValid(Interactor))
+	{
+		PickUp(Interactor->GetRootComponent(), NAME_None);
+	}
 }
 
-void AHeistThrowable::PickUp(AActor* Carrier, FName AttachSocket)
+void AHeistThrowable::PickUp(USceneComponent* AttachParent, FName AttachSocket)
 {
-	if (!IsValid(Carrier) || bIsHeld)
+	if (!IsValid(AttachParent) || bIsHeld)
 	{
 		return;
 	}
@@ -63,10 +66,10 @@ void AHeistThrowable::PickUp(AActor* Carrier, FName AttachSocket)
 	MeshComponent->SetSimulatePhysics(false);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	AttachToActor(Carrier, FAttachmentTransformRules::SnapToTargetIncludingScale, AttachSocket);
+	AttachToComponent(AttachParent, FAttachmentTransformRules::SnapToTargetIncludingScale, AttachSocket);
 }
 
-void AHeistThrowable::Throw(const FVector& Direction, float Impulse)
+void AHeistThrowable::Throw(const FVector& LaunchLocation, const FVector& Direction, float Speed)
 {
 	if (!bIsHeld)
 	{
@@ -80,13 +83,20 @@ void AHeistThrowable::Throw(const FVector& Direction, float Impulse)
 	bIsHeld = false;
 	bAwaitingImpactNoise = true;
 
+	// Move clear of the thrower BEFORE physics wakes up. Enabling simulation
+	// while overlapping their capsule makes the solver resolve the penetration
+	// by flinging the object in an arbitrary direction.
+	SetActorLocation(LaunchLocation, /*bSweep*/ false, nullptr, ETeleportType::TeleportPhysics);
+
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	MeshComponent->SetSimulatePhysics(true);
 
-	// Ignore the thrower briefly so it does not immediately collide with them.
-	MeshComponent->IgnoreActorWhenMoving(LastThrower.Get(), true);
-
-	MeshComponent->AddImpulse(Direction.GetSafeNormal() * Impulse, NAME_None, /*bVelChange*/ true);
+	// Set velocity rather than add to it: while carried the body is dragged by
+	// the animating hand bone, and that residual velocity would otherwise be
+	// added to the launch and send the throw off-course.
+	const FVector LaunchVelocity = Direction.GetSafeNormal() * Speed;
+	MeshComponent->SetPhysicsLinearVelocity(LaunchVelocity);
+	MeshComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 }
 
 void AHeistThrowable::HandleMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,

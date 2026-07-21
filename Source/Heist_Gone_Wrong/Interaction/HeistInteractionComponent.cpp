@@ -3,6 +3,7 @@
 #include "HeistInteractionComponent.h"
 #include "HeistInteractable.h"
 #include "Engine/World.h"
+#include "Engine/OverlapResult.h"
 #include "GameFramework/Actor.h"
 #include "TimerManager.h"
 
@@ -43,34 +44,103 @@ void UHeistInteractionComponent::ScanForInteractable()
 		return;
 	}
 
-	// Generic view point: pawns resolve this to the controller's eyes, which is
-	// what we want for a camera-relative reach, without knowing the owner's type.
+	const FVector OwnerLocation = Owner->GetActorLocation();
+	const FVector OwnerForward = Owner->GetActorForwardVector();
+
+	// Generic view point, used as the eye for the line-of-sight check.
 	FVector ViewLocation = FVector::ZeroVector;
 	FRotator ViewRotation = FRotator::ZeroRotator;
 	Owner->GetActorEyesViewPoint(ViewLocation, ViewRotation);
 
-	const FVector TraceEnd = ViewLocation + ViewRotation.Vector() * InteractionRange;
-
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(HeistInteractionScan), /*bTraceComplex*/ false);
 	Params.AddIgnoredActor(Owner);
 
-	FHitResult Hit;
-	const bool bHit = World->SweepSingleByChannel(
-		Hit, ViewLocation, TraceEnd, FQuat::Identity, ECC_Visibility,
-		FCollisionShape::MakeSphere(InteractionRadius), Params);
+	TArray<FOverlapResult> Overlaps;
+	World->OverlapMultiByChannel(
+		Overlaps, OwnerLocation, FQuat::Identity, ECC_Visibility,
+		FCollisionShape::MakeSphere(InteractionRange), Params);
 
-	AActor* Candidate = bHit ? Hit.GetActor() : nullptr;
+	// Nearest valid candidate wins.
+	AActor* Best = nullptr;
+	float BestDistanceSq = TNumericLimits<float>::Max();
 
-	// Only actors implementing the contract and willing to be used right now count.
-	if (IsValid(Candidate) && Candidate->Implements<UHeistInteractable>()
-		&& IHeistInteractable::Execute_CanInteract(Candidate, Owner))
+	for (const FOverlapResult& Overlap : Overlaps)
 	{
-		SetFocus(Candidate);
+		AActor* Candidate = Overlap.GetActor();
+
+		// One actor can contribute several overlapping components.
+		if (!IsValid(Candidate) || Candidate == Best)
+		{
+			continue;
+		}
+
+		if (!Candidate->Implements<UHeistInteractable>()
+			|| !IHeistInteractable::Execute_CanInteract(Candidate, Owner))
+		{
+			continue;
+		}
+
+		const float DistanceSq = FVector::DistSquared(OwnerLocation, Candidate->GetActorLocation());
+		if (DistanceSq >= BestDistanceSq)
+		{
+			continue;
+		}
+
+		if (!IsCandidateReachable(Candidate, OwnerLocation, ViewLocation, OwnerForward))
+		{
+			continue;
+		}
+
+		Best = Candidate;
+		BestDistanceSq = DistanceSq;
 	}
-	else
+
+	SetFocus(Best);
+}
+
+bool UHeistInteractionComponent::IsCandidateReachable(const AActor* Candidate, const FVector& OwnerLocation,
+	const FVector& ViewLocation, const FVector& OwnerForward) const
+{
+	const FVector CandidateLocation = Candidate->GetActorLocation();
+
+	// Facing test on the horizontal plane only, so an object at the player's
+	// feet is not rejected for being "below" them.
+	FVector ToCandidate = CandidateLocation - OwnerLocation;
+	ToCandidate.Z = 0.f;
+
+	const bool bCloseEnoughToSkipFacing = ToCandidate.SizeSquared()
+		<= FMath::Square(FacingIgnoreDistance);
+
+	if (!bCloseEnoughToSkipFacing)
 	{
-		SetFocus(nullptr);
+		const FVector Forward2D = FVector(OwnerForward.X, OwnerForward.Y, 0.f).GetSafeNormal();
+		if (FVector::DotProduct(Forward2D, ToCandidate.GetSafeNormal()) < MinFacingDot)
+		{
+			return false;
+		}
 	}
+
+	if (!bRequireLineOfSight)
+	{
+		return true;
+	}
+
+	const UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return true;
+	}
+
+	FCollisionQueryParams LosParams(SCENE_QUERY_STAT(HeistInteractionLos), /*bTraceComplex*/ false);
+	LosParams.AddIgnoredActor(GetOwner());
+	LosParams.AddIgnoredActor(Candidate);
+
+	// Anything blocking between the eye and the object means it is behind cover.
+	FHitResult Blocker;
+	const bool bBlocked = World->LineTraceSingleByChannel(
+		Blocker, ViewLocation, CandidateLocation, ECC_Visibility, LosParams);
+
+	return !bBlocked;
 }
 
 void UHeistInteractionComponent::SetFocus(AActor* NewFocus)
