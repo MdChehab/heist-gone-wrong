@@ -195,5 +195,5 @@ _Continued directly from Session 1 the same day._
 - Remove the jump binding now that the roll is proven.
 
 ### Editor-side steps still needed from me
-- CONFIRM NAVMESH on L_Museum: add a NavMeshBoundsVolume if absent, press P to verify green
-  coverage, Build Paths. Asked several times and still unverified - W3 cannot start without it.
+- None outstanding. NavMesh on L_Museum was confirmed working by the developer (built during the
+  W1 level pass), so W3 guard pathing is unblocked.
