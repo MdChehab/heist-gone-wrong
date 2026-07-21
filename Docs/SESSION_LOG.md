@@ -123,3 +123,77 @@ _Continued directly from Session 1 the same day._
 - Build and save the graybox level (checklist above), then hand it back for the .umap commit.
 - (Optional, offered but deferred) let Claude stub the placeholder C++ actor classes
   (AHeistSwitch/AHeistDoor/etc.) when W5 starts, not now.
+
+---
+
+## [2026-07-21] Session 3 - W2 player mechanics: interaction, throw, roll
+**Cycle/Week:** W2 (Player mechanics, due Jul 19)
+**Linear issues touched:** (none recorded)
+
+### Done
+- Built the graybox museum level `Content/Heist/Levels/L_Museum.umap` (developer, in editor)
+  using modeling-tool geometry; committed with its `_GENERATED` meshes.
+- Interaction system, `Source/Heist_Gone_Wrong/Interaction/`:
+  - `IHeistInteractable` - BlueprintNativeEvent contract: GetInteractionPrompt / CanInteract /
+    Interact. Implemented by throwables now, switch/door/artifact later.
+  - `UHeistInteractionComponent` - finds the nearest interactable on a 0.15s timer (never Tick),
+    broadcasts `OnFocusChanged` for the future HUD prompt, `TryInteract()` re-validates before firing.
+- Throwing:
+  - `AHeistThrowable` - physics pickup that reports a `UAISense_Hearing` noise event on impact,
+    so W4 guard investigation needs no changes to this class.
+  - `UHeistThrowComponent` - carries one object, charged throw (hold to wind up, release to launch),
+    speed lerped MinThrowSpeed 250 -> MaxThrowSpeed 1700 over MaxChargeTime 1.1s.
+    `GetChargeRatio()` is ready for a W6 HUD power meter.
+- Roll on the character: launches along current velocity (facing when idle), with a lockout.
+- Editor wiring (developer): IA_Interact / IA_Throw / IA_Roll mapped in IMC_Default (throw is on
+  left mouse), `BP_Throwable` created and placed in the Gallery, carry socket added to the
+  mannequin skeleton, actions assigned on BP_ThirdPersonCharacter.
+- All three mechanics play-tested and confirmed working by the developer.
+- DECISIONS.md updated with the Interaction and Throwing sections.
+
+### Decisions made
+- Interaction uses a proximity sphere, NOT a camera-forward trace. See DECISIONS.md; the trace
+  approach was implemented first and had to be replaced.
+- Charged throw instead of fixed-speed, which covers the "different noise ranges" stretch goal
+  with one throwable type.
+- Character turns to face the throw on release.
+- Jump binding kept for now; agreed to remove it once the roll had proven out, which it now has,
+  so this is outstanding.
+
+### Current state
+- Player has: walk/run/crouch, roll, pick up and charged-throw objects. All working.
+- Throwables report AI hearing noise on impact. Nothing listens yet - that is W4, by design.
+- Graybox museum level exists and is walkable.
+
+### Known issues / gotchas
+- No animations for crouch, roll or throw. The character slides through the roll and keeps a
+  standing pose while crouched. Cosmetic; W3 animation states.
+- `bDebugThrow` on the throw component draws the aim line and logs throw vectors. Off by default,
+  kept because it made both throw bugs findable in one pass.
+- IMPORTANT for future sessions: Live Coding (Ctrl+Alt+F11) CANNOT apply new UPROPERTY members or
+  changed function signatures - it silently keeps the old code, which cost real debugging time
+  this session. For those changes the editor must be CLOSED and a full build run.
+- Enhanced Input gotcha: a `Pressed` trigger on IA_Throw would fire Started and Completed on the
+  same frame and break charging. Leave its trigger list empty.
+
+### Bugs found in testing, and their causes (report material)
+- Throw flew straight up. `ControlRotation` is unnormalized: looking slightly down reads as pitch
+  350, so `Clamp(350 + 10, -89, 89)` pinned it to 89 = vertical. Fixed by normalizing first.
+  Found by logging intermediate values; `pitch=89.0` sitting exactly on the clamp boundary gave it away.
+- Throw scattered randomly. Physics was re-enabled while the object still sat inside the
+  character's capsule, so the solver ejected it; and `AddImpulse` was adding to the velocity the
+  animating hand bone had imparted. Fixed with a muzzle launch point and setting velocity outright.
+- Pickup failed when standing on an object. A sphere sweep forward from eye height passes over
+  objects on the floor. Replaced with proximity search.
+- Roll was a stutter. `GroundFriction`, `BrakingDecelerationWalking` and the `MaxWalkSpeed` clamp
+  cancel a ground `LaunchCharacter` within a few frames. Suspended for the roll, restored after.
+- Pattern worth noting in the report: in three of four cases the gameplay code was correct and the
+  bug was an interaction with an engine default or convention.
+
+### Next steps
+- W3 (Guard AI part 1): NavMesh, guard pawn + AIController, waypoint patrol, animation states.
+- Remove the jump binding now that the roll is proven.
+
+### Editor-side steps still needed from me
+- CONFIRM NAVMESH on L_Museum: add a NavMeshBoundsVolume if absent, press P to verify green
+  coverage, Build Paths. Asked several times and still unverified - W3 cannot start without it.
