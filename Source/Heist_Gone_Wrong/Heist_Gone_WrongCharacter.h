@@ -109,6 +109,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Movement|Roll")
 	bool bIsRolling = false;
 
+private:
+
+	/**
+	 *  Ground friction and braking captured in BeginPlay. The roll zeroes both
+	 *  so the launch is not scrubbed off within a few frames, then restores
+	 *  these rather than assuming the constructor's values still apply.
+	 */
+	float DefaultGroundFriction = 8.f;
+	float DefaultBrakingDecelerationWalking = 2000.f;
+
+protected:
+
 protected:
 
 	/** Constructor */

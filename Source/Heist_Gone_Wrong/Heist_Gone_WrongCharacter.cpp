@@ -74,6 +74,10 @@ void AHeist_Gone_WrongCharacter::BeginPlay()
 	// constructor defaults) reach the movement component at runtime.
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchSpeed;
+
+	// Remember what the roll has to put back.
+	DefaultGroundFriction = GetCharacterMovement()->GroundFriction;
+	DefaultBrakingDecelerationWalking = GetCharacterMovement()->BrakingDecelerationWalking;
 }
 
 void AHeist_Gone_WrongCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -258,6 +262,18 @@ void AHeist_Gone_WrongCharacter::DoRoll()
 
 	bIsRolling = true;
 
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+
+	// A ground launch is scrubbed off almost immediately by friction, braking
+	// and the walk speed cap, which makes an otherwise correct roll read as a
+	// tiny stutter. Suspend all three for the duration and restore in EndRoll.
+	// Both speed caps are raised so a roll works crouched or standing without
+	// forcing the player out of their stance.
+	Movement->GroundFriction = 0.f;
+	Movement->BrakingDecelerationWalking = 0.f;
+	Movement->MaxWalkSpeed = RollSpeed;
+	Movement->MaxWalkSpeedCrouched = RollSpeed;
+
 	// Programmatic launch for now. Swap to a root-motion montage once a roll
 	// animation exists; the state flag and lockout stay the same either way.
 	LaunchCharacter(RollDirection * RollSpeed, /*bXYOverride*/ true, /*bZOverride*/ false);
@@ -272,6 +288,15 @@ void AHeist_Gone_WrongCharacter::DoRoll()
 void AHeist_Gone_WrongCharacter::EndRoll()
 {
 	bIsRolling = false;
+
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+
+	Movement->GroundFriction = DefaultGroundFriction;
+	Movement->BrakingDecelerationWalking = DefaultBrakingDecelerationWalking;
+
+	// Back to whichever pace the player was in before the roll.
+	Movement->MaxWalkSpeed = bIsRunning ? RunSpeed : WalkSpeed;
+	Movement->MaxWalkSpeedCrouched = CrouchSpeed;
 }
 
 void AHeist_Gone_WrongCharacter::DoToggleCrouch()
