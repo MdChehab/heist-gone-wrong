@@ -79,6 +79,15 @@ pressed, reducing finger strain and freeing that hand for look/throw.
 (tiring over long stealth sections). Both are one-line changes if playtesting says otherwise;
 revisit after the first playable stealth pass.
 
+### Jump is kept, not replaced by the roll - 2026-07-21
+**Decision:** Keep the template's jump binding. The earlier plan was to remove it once the roll
+existed; that is now reversed. Revisit at the end of the project, not before.
+**Reasoning:** The roll landed and works, but jump costs nothing to keep, is already wired, and
+leaves the option open. Removing it now would be an early irreversible call for no benefit, and
+it stays useful for testing vertical space in the level.
+**Rejected:** Removing jump as soon as the roll proved out. Do NOT remove it without asking -
+earlier session notes say to, and this entry supersedes them.
+
 ---
 
 ## Interaction

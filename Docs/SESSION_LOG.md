@@ -157,8 +157,8 @@ _Continued directly from Session 1 the same day._
 - Charged throw instead of fixed-speed, which covers the "different noise ranges" stretch goal
   with one throwable type.
 - Character turns to face the throw on release.
-- Jump binding kept for now; agreed to remove it once the roll had proven out, which it now has,
-  so this is outstanding.
+- Jump binding is KEPT. The earlier plan to remove it once the roll proved out was reversed by
+  the developer: keep the option open and revisit at the end of the project. See DECISIONS.md.
 
 ### Current state
 - Player has: walk/run/crouch, roll, pick up and charged-throw objects. All working.
@@ -192,7 +192,7 @@ _Continued directly from Session 1 the same day._
 
 ### Next steps
 - W3 (Guard AI part 1): NavMesh, guard pawn + AIController, waypoint patrol, animation states.
-- Remove the jump binding now that the roll is proven.
+- (Jump removal is no longer a next step - see DECISIONS.md, jump is kept.)
 
 ### Editor-side steps still needed from me
 - None outstanding. NavMesh on L_Museum was confirmed working by the developer (built during the
