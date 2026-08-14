@@ -197,3 +197,53 @@ _Continued directly from Session 1 the same day._
 ### Editor-side steps still needed from me
 - None outstanding. NavMesh on L_Museum was confirmed working by the developer (built during the
   W1 level pass), so W3 guard pathing is unblocked.
+
+---
+
+## [2026-07-21] Session 4 - W3 guard AI part 1: waypoint patrol
+**Cycle/Week:** W3 (Guard AI part 1, due Jul 26)
+**Linear issues touched:** (none recorded)
+
+### Done
+- Guard AI in `Source/Heist_Gone_Wrong/AI/`:
+  - `AHeistGuardCharacter` - guard body. Holds `PatrolPoints` (EditInstanceOnly), `WaitTimeAtPoint`,
+    `bLoopPatrol`, `PatrolAcceptanceRadius`, `PatrolSpeed`. Auto-possesses its controller,
+    orients to movement. Re-applies PatrolSpeed in BeginPlay for BP tuning.
+  - `AHeistGuardController` - C++ state machine (`EGuardState` Patrol/Investigate/Alerted; only
+    Patrol implemented). OnPossess -> StartPatrol -> MoveTo waypoint -> OnMoveCompleted -> timer
+    wait -> AdvancePatrol. No Tick. Null waypoints skipped, failed moves deferred via timer so
+    they cannot infinite-loop.
+- Editor (developer): BP_GuardCharacter (mesh SKM_*_Simple, mesh Z -90 / yaw -90, Anim Class
+  ABP_Unarmed), TargetPoints placed around the Gallery, guard placed and PatrolPoints assigned.
+- Fixed guard locomotion animation (see below). Guard now patrols AND animates. Confirmed by developer.
+- Committed guard code + BP_GuardCharacter + L_Museum + the edited ABP_Unarmed (commit 0fd866b).
+- Recorded three Guard AI decisions in DECISIONS.md.
+
+### Decisions made
+- C++ state machine in the AIController, not Behavior Tree / StateTree (diffable, C++-first).
+- Patrol via placed TargetPoint actors in an EditInstanceOnly array on the guard.
+- Guard walk animation gated on ground speed alone (see gotcha). Full reasoning in DECISIONS.md.
+
+### Current state
+- Guard patrols its waypoint loop, pauses ~2s per point, animates walk/idle, turns through corners.
+- Vision / detection / investigate / alerted are NOT built - that is W4.
+
+### Known issues / gotchas
+- ANIMATION ROOT CAUSE (worth the design report): the shared ABP_Unarmed gated Idle->Walk on
+  ground speed AND non-zero acceleration ("input applied"). A player holds a key so acceleration
+  is continuous; an AI moved by nav requested-velocity has zero acceleration at cruising speed,
+  so the guard never left Idle while sliding. Fix: ShouldMove now gates on speed only. Editing
+  the shared ABP is intentional - one asset, both characters, player unaffected. The developer's
+  own hypothesis (input vs speed) led to the fix.
+- ABP_Unarmed is now a modified shared asset. If it is ever re-imported/reset from the template,
+  the ShouldMove edit must be re-applied or the guard reverts to sliding in idle.
+- Guard pauses at waypoints without a look-around beat yet; that only becomes meaningful with the
+  W4 vision cone, so it was left minimal.
+
+### Next steps
+- W4 (Guard AI part 2, due Aug 2): AI Perception (sight) vision cone + line-of-sight, detection
+  meter, and Investigate state reacting to the thrown-object noise events the throwable already
+  reports. The Investigate/Alerted enum states and OnMoveCompleted branch are already stubbed.
+
+### Editor-side steps still needed from me
+- None outstanding for W3.

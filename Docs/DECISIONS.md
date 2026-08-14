@@ -157,8 +157,44 @@ so this would fight the input); a full aim stance (W6 polish).
 
 ## Guard AI
 
-_No decisions recorded yet. Planned: NavMesh patrol, event-driven AI Perception (vision
-cone + line-of-sight), a Patrol / Investigate / Alerted state machine. See W3-W4 in CLAUDE.md._
+### C++ state machine in the AIController, not Behavior Tree or StateTree - 2026-07-21
+**Decision:** The guard's behaviour is a plain C++ state machine on `AHeistGuardController`
+(`EGuardState` = Patrol / Investigate / Alerted). Body and brain are split:
+`AHeistGuardCharacter` holds mesh, movement and the patrol waypoint data;
+`AHeistGuardController` decides where to go and issues navmesh moves. Movement is
+event-driven through `OnMoveCompleted`, never Tick.
+**Reasoning:** CLAUDE.md explicitly calls for "a simple state machine (Patrol / Investigate /
+Alerted)" and a C++-first architecture. A C++ machine stays diffable and reviewable in the
+repo; Behavior Trees and StateTrees are binary `.uasset` that fight the DRY/reviewability
+priorities. For three perception-driven states this is less machinery than a Blackboard + BT
+graph. The body/brain split is standard UE and keeps the pawn reusable.
+**Rejected:** Behavior Tree (industry standard and more visual, but binary and un-diffable);
+StateTree (the combat variant uses it, but same binary-asset downside and more setup than
+three states need).
+
+### Patrol waypoints are placed marker actors on the guard, ping-pong or loop - 2026-07-21
+**Decision:** Each guard holds an `EditInstanceOnly` array of waypoint actors (plain
+`TargetPoint`s placed in the level), plus `WaitTimeAtPoint`, `bLoopPatrol` (loop vs reverse)
+and `PatrolAcceptanceRadius`. The controller cycles them.
+**Reasoning:** Designer places the guard and assigns its route in the level, per instance,
+with no code change. Plain TargetPoints avoid a custom waypoint class. Null slots are skipped
+and a failed move is always deferred through a timer, so a bad route degrades gracefully
+instead of stalling or spinning.
+**Rejected:** A spline route (smoother but heavier to author for a graybox); a shared route
+asset (unneeded for one or two guards).
+
+### Guard locomotion animation: gate the walk on speed, not input - 2026-07-21
+**Decision:** Edited the shared `ABP_Unarmed`'s `ShouldMove` to depend on ground speed alone,
+removing the additional "acceleration (input) applied" condition.
+**Reasoning:** Found in testing: the guard patrolled but slid in the idle pose. The template
+ABP gated its Idle-to-Walk transition on BOTH ground speed AND non-zero acceleration. A
+player holds a movement key, so input/acceleration is applied continuously even at top speed;
+an AI-moved character is driven by a requested velocity from nav path following, so its
+`GetCurrentAcceleration()` is zero once cruising. The acceleration half of the gate could
+never be satisfied by the guard, so it never left Idle. Gating on speed alone fixes the guard
+and leaves the player unaffected (a moving player always has speed). One shared ABP serves both.
+**Rejected:** Duplicating the ABP into a guard-only copy (not DRY, duplicates the whole graph);
+a C++ workaround to force acceleration onto a nav-driven pawn (fights the movement system).
 
 ---
 
