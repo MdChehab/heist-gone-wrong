@@ -308,3 +308,55 @@ _Continued directly from Session 1 the same day._
 
 ### Editor-side steps still needed from me
 - None outstanding for W4. (W5 will need editor placement of switch/door/artifact/exit actors.)
+
+---
+
+## [2026-07-21] Session 6 - W5 stealth loop + win condition
+**Cycle/Week:** W5 (Stealth loop + win condition, due Aug 9)
+**Linear issues touched:** (none recorded)
+
+### Done
+- `UHeistObjectiveSubsystem` (Source/Heist_Gone_Wrong/): run state, checkpoint, fail/restart, win.
+  Binds the detection meter's OnPlayerDetected -> full detection restarts from the checkpoint.
+- Fail/restart: teleport player to checkpoint, reset the meter, broadcast OnRunReset so guards,
+  door, switch, artifact and throwables restore themselves. Guards added ResetToPatrol (+ the
+  guard character captures its spawn transform and ResetToStart).
+- Switch-and-door puzzle: `IHeistActivatable` interface, `AHeistDoor` (interpolates open/closed,
+  ticks only while moving), `AHeistSwitch` (IHeistInteractable driving its linked activatables).
+- Win condition: `AHeistArtifact` (interact to take -> objective PickUpArtifact), `AHeistExitVolume`
+  (enter with artifact -> win), `AHeistCheckpoint` (moves the respawn point).
+- Checkpoints bank progress: crossing one broadcasts OnCheckpointSaved and each gameplay actor
+  snapshots its state; a restart restores those snapshots (not the run start). Fixes the bug where
+  a door opened before a checkpoint reverted on a catch.
+- Editor (developer): BP_Door, BP_Switch, BP_Artifact, BP_Exit, BP_Checkpoint placed and linked
+  (switch Targets -> door) in L_Museum.
+- Full loop confirmed by playtest: sneak -> switch -> door -> artifact -> exit = win; caught =
+  restart from checkpoint with progress banked. Committed 76f3c8f (code) plus this docs entry.
+
+### Decisions made
+- Objective/run state as a world subsystem; checkpoints snapshot/restore world state (see DECISIONS.md).
+- Switch drives the door through IHeistActivatable (interface-decoupled).
+
+### Current state
+- The game is a complete, playable stealth loop end to end: infiltrate, distract, solve the
+  switch/door, steal the artifact, escape to win; get caught -> checkpoint restart. This is the
+  core deliverable and it works.
+
+### Known issues / gotchas
+- A carried throwable banks its POSITION at a checkpoint, so on a catch it drops at that spot
+  rather than staying in hand. Minor; keeping-in-hand across respawn was deliberately deferred.
+- DEBUG still on (detection %, guard investigate spheres, throw/noise draws, and the on-screen
+  objective/win/restart messages are debug print strings, not real UI). All of this is replaced or
+  disabled in W6 (HUD + packaging).
+- Still no animations (crouch, roll, throw, guard turn/investigate) - the whole animation pass is W6.
+- The GDD and Branding docs the developer is writing live under Docs/ but are intentionally
+  untracked for now.
+
+### Next steps
+- W6 (Ship, due Aug 14): HUD/UI (detection meter, interaction/objective prompts, win/lose screens
+  bound to the subsystem delegates that already exist), core audio (footsteps, detection cue), the
+  animation pass, full playtest + bug fixes, packaged Windows build, design report, presentation.
+- Turn OFF all debug draws/flags before the packaged build.
+
+### Editor-side steps still needed from me
+- None outstanding for W5. W6 is mostly editor/UI/audio work.

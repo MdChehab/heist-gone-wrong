@@ -236,10 +236,33 @@ meter passes a threshold, so a brief exposure is survivable and noises can still
 
 ---
 
-## Interaction
+## Objective / Loop
 
-_No decisions recorded yet. Planned: an interaction interface plus a throwable/pickup actor;
-object pooling for throwables to avoid spawn/destroy churn._
+### Run state and flow in a world subsystem; checkpoints bank progress - 2026-07-21
+**Decision:** `UHeistObjectiveSubsystem` owns the run: artifact state, run state, the
+checkpoint, and the fail/restart and win flow. Full detection restarts from the checkpoint;
+reaching the exit with the artifact wins. Crossing a checkpoint broadcasts `OnCheckpointSaved`
+(each gameplay actor snapshots its current state) and updates the respawn point; a restart
+broadcasts `OnRunReset` (each actor restores its snapshot) and respawns the player there.
+**Reasoning:** Same rule as the detection meter - game-wide run state belongs in a subsystem,
+not on the GameMode or an actor, so any actor can read/write it without cross-casting. The
+snapshot/restore pair is what makes a checkpoint meaningful: without it a checkpoint saved only
+the player's position while the world rewound to the run start, so a door opened before the
+checkpoint closed again on a catch. Now progress banked at a checkpoint (door open, artifact
+taken) survives a catch; progress made after it correctly reverts.
+**Rejected:** Checkpoint saves position only (inconsistent - respawn past a now-closed door);
+a full reset-to-start on every fail regardless of checkpoint (defeats the checkpoint); putting
+the flow on the GameMode (CLAUDE.md steers game-wide state to subsystems).
+
+### Puzzle/objective actors are interface-decoupled - 2026-07-21
+**Decision:** `IHeistActivatable` (Activate/Deactivate) sits between the switch and the door;
+the switch drives any activatable through the interface. The switch is an `IHeistInteractable`,
+reusing the W2 interaction system. The artifact is an `IHeistInteractable`; exit and checkpoint
+are trigger volumes.
+**Reasoning:** The switch never needs to know it drives a door - the same switch could disable a
+camera later (a stretch goal) with no switch change. Reuses the interaction contract rather than
+a parallel system. Matches CLAUDE.md's "interfaces for can-do-X contracts".
+**Rejected:** A direct switch->door reference typed to the door class (locks the switch to doors).
 
 ---
 
