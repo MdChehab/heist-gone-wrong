@@ -3,6 +3,8 @@
 #include "HeistThrowable.h"
 #include "Components/StaticMeshComponent.h"
 #include "Perception/AISense_Hearing.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/World.h"
 
 AHeistThrowable::AHeistThrowable()
 {
@@ -124,4 +126,13 @@ void AHeistThrowable::ReportNoise_Implementation(const FVector& Location)
 	// means the guard side is pure configuration later, with no changes here.
 	UAISense_Hearing::ReportNoiseEvent(
 		this, Location, NoiseLoudness, LastThrower.Get(), NoiseRange, TEXT("ThrowableImpact"));
+
+#if !UE_BUILD_SHIPPING
+	// Green sphere where the noise actually fires, so it can be compared against
+	// where the guard chooses to investigate (temporary diagnostic).
+	if (const UWorld* World = GetWorld())
+	{
+		DrawDebugSphere(World, Location, 60.f, 12, FColor::Green, false, 6.f, 0, 3.f);
+	}
+#endif
 }

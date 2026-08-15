@@ -24,6 +24,13 @@ public:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category="Guard|Patrol")
 	TArray<TObjectPtr<AActor>> PatrolPoints;
 
+	/**
+	 *  While alerted the guard stands still and must face the player, so it
+	 *  follows the controller's (focus) rotation instead of its movement
+	 *  direction. Patrol/investigate switch it back to orient-to-movement.
+	 */
+	void SetFaceControlRotation(bool bEnabled);
+
 	const TArray<TObjectPtr<AActor>>& GetPatrolPoints() const { return PatrolPoints; }
 	FORCEINLINE float GetWaitTimeAtPoint() const { return WaitTimeAtPoint; }
 	FORCEINLINE bool ShouldLoopPatrol() const { return bLoopPatrol; }
