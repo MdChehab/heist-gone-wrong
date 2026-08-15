@@ -200,9 +200,39 @@ a C++ workaround to force acceleration onto a nav-driven pawn (fights the moveme
 
 ## Detection
 
-_No decisions recorded yet. Planned: a detection meter that fills while the player is in a
-guard's sight; full meter = fail + restart from checkpoint. Detection/vision logic to run on
-a ~0.1-0.2s timer via AI Perception, not per-frame Tick._
+### Vision and hearing via UE AI Perception - 2026-07-21
+**Decision:** The guard senses the player with a `UAIPerceptionComponent` (Sight + Hearing
+configs) on the controller, not a hand-rolled cone. Sight gives the cone and the line-of-sight
+trace; hearing consumes the `ReportNoiseEvent` calls that throwables and footsteps already make.
+**Reasoning:** CLAUDE.md calls for the event-driven Perception system over polling. Sight's
+built-in LoS trace is exactly the "crouch breaks line of sight at low cover" mechanic for free -
+it traces to the player's (crouch-lowered) body point, so low cover hides a crouched player.
+Sight affiliation must include neutrals (`bDetectNeutrals=true`) or the unteamed player is
+invisible to the guard. The controller must keep its default tick: AAIController derives its
+control rotation (which sets the sight-cone direction) there; disabling tick froze the cone.
+**Rejected:** A manual vision cone + periodic trace (reimplements what Perception does, and would
+be a per-frame or timer poll).
+
+### Detection meter as a world subsystem - 2026-07-21
+**Decision:** One global detection meter lives in `UHeistDetectionSubsystem`. Guards report
+see/lost; it fills while any guard sees the player, drains otherwise, and fires `OnPlayerDetected`
+at full (W5 wires fail + checkpoint restart). Fill/drain rates are tunable; updates run on a
+0.1s timer only while active.
+**Reasoning:** CLAUDE.md's class list said "detection component," but its own rule is that
+game-wide state belongs in a subsystem, not on an actor. The meter is exactly that - one value
+many guards write and the HUD reads - so a subsystem avoids casting between guards and the player
+and gives the HUD a single source of truth. Superseding the "component" wording deliberately.
+**Rejected:** A component on the player or guard (per-actor, needs cross-casting); piling it on
+the GameMode (CLAUDE.md warns against this).
+
+### Detection is instant, not ramped (for now) - 2026-07-21
+**Decision:** Any sight of the player immediately enters Alerted and starts filling the meter;
+losing sight sends the guard to hunt the last-known spot. A softer "brief glimpse only raises
+suspicion" ramp was considered and deferred.
+**Reasoning:** The instant model is simpler and the playtest felt acceptable. The ramp is a
+tuning refinement, not a correctness fix; revisit if quick-hide play feels unfair.
+**Rejected (for now):** Meter-threshold commit (guard only pins the player's position once the
+meter passes a threshold, so a brief exposure is survivable and noises can still distract).
 
 ---
 

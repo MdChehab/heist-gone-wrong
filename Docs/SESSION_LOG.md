@@ -247,3 +247,64 @@ _Continued directly from Session 1 the same day._
 
 ### Editor-side steps still needed from me
 - None outstanding for W3.
+
+---
+
+## [2026-07-21] Session 5 - W4 guard AI part 2: vision, detection, investigate
+**Cycle/Week:** W4 (Guard AI part 2, due Aug 2)
+**Linear issues touched:** (none recorded)
+
+### Done
+- AI Perception on `AHeistGuardController`: Sight (cone + line-of-sight) and Hearing configs,
+  event-driven via OnTargetPerceptionUpdated. Tuning exposed (SightRadius, LoseSightRadius,
+  vision half-angle, HearingRange).
+- `UHeistDetectionSubsystem` (world subsystem): global detection meter, fills while any guard
+  sees the player, drains otherwise, fires OnPlayerDetected at 100% (W5 fail hook). On-screen
+  debug % readout.
+- State machine completed: Patrol -> Alerted (sees player: stop, face, meter fills) -> Investigate
+  (heard noise OR lost sight: walk to point, widen cone to survey, resume patrol).
+- Player footstep noise (`Heist_Gone_WrongCharacter`): running emits an AI hearing noise on a
+  0.35s timer (RunNoiseRange); walking and crouch-moving are silent. Same hearing sense as throwables.
+- Many playtest-driven fixes (all committed 4535bdc guard AI, 9f3cd43 footstep):
+  - Sight cone was world-fixed -> re-enabled the controller's default tick (drives control rotation).
+  - Guard now faces the player when alerted (swaps orient-to-movement for controller-yaw).
+  - Investigate look-around: switched from body-rotating scan to WIDENING the cone (no slide,
+    no gaps, forward-compatible with a future investigation animation).
+  - Guard overshoots a couple steps past a player's last-known point so it enters a room instead
+    of stopping in the doorway. Overshoot is player-hunt only, not noise.
+  - Priority: Alerted > player-hunt > noise > patrol. A thrown object can't pull a guard off a hunt.
+  - Noise investigations linger longer (NoiseInvestigateTime ~7s) than player hunts (~3s) so the
+    distraction buys real time.
+- Confirmed by playtest: vision, LoS, detection meter, hearing, investigate/survey, distraction
+  with correct priority + linger, footstep run/walk/crouch, and crouch-breaks-LoS all work.
+
+### Decisions made
+- AI Perception over a manual cone; detection meter as a world subsystem (supersedes the
+  "detection component" wording in CLAUDE.md); detection instant not ramped (deferred). See DECISIONS.md.
+- Investigate uses widen-cone, not rotate-to-scan (developer's idea, better than the first pass).
+- Footstep noise: running loud, walk/crouch silent.
+
+### Current state
+- The full guard stealth loop works end to end except the fail/restart on full detection (W5).
+- Crouch-breaks-line-of-sight confirmed: AI sight traces to the crouch-lowered body point.
+
+### Known issues / gotchas
+- DEBUG IS ON: guard investigate spheres (cyan=noise, orange=lost-sight), the detection %
+  readout (bDebugMeter/bDebugGuard default true), and a green sphere on every throwable impact
+  (unconditional in non-shipping). Turn these off before the W6 packaged build.
+- No animations yet for crouch, roll, throw, guard turn, or guard investigate. The guard turning
+  to face the player (alerted) and any body turn slides. All deferred to one animation pass.
+- Crouch depth is the engine default CrouchedHalfHeight (40 => ~0.8m, quite low/crawl-like). When
+  the crouch animation is added, tune CrouchedHalfHeight + the anim pose + level cover heights
+  together so hiding reads naturally.
+- Throwable noise fires at first physics impact, which can differ slightly from where the object
+  visually comes to rest. Cosmetic; refine if it matters.
+
+### Next steps
+- W5 (Stealth loop + win condition, due Aug 9): fail/restart from checkpoint on full detection
+  (hook UHeistDetectionSubsystem::OnPlayerDetected), guard reset, switch-and-door puzzle, artifact
+  pickup, exit trigger. Full loop end to end.
+- The W5 stealth-actor placeholders (switch/door/artifact/exit) can be stubbed as C++ now.
+
+### Editor-side steps still needed from me
+- None outstanding for W4. (W5 will need editor placement of switch/door/artifact/exit actors.)
