@@ -3,6 +3,7 @@
 #include "HeistGuardController.h"
 #include "HeistGuardCharacter.h"
 #include "HeistDetectionSubsystem.h"
+#include "HeistObjectiveSubsystem.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
@@ -64,10 +65,33 @@ void AHeistGuardController::BeginPlay()
 	GuardPerception->ConfigureSense(*HearingConfig);
 	GuardPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AHeistGuardController::HandlePerceptionUpdated);
 
-	if (const UWorld* World = GetWorld())
+	if (UWorld* World = GetWorld())
 	{
 		DetectionSubsystem = World->GetSubsystem<UHeistDetectionSubsystem>();
+
+		// Return to patrol whenever the run restarts from a checkpoint.
+		if (UHeistObjectiveSubsystem* Objective = World->GetSubsystem<UHeistObjectiveSubsystem>())
+		{
+			Objective->OnRunReset.AddDynamic(this, &AHeistGuardController::ResetToPatrol);
+		}
 	}
+}
+
+void AHeistGuardController::ResetToPatrol()
+{
+	StopMovement();
+
+	SeenPlayer = nullptr;
+	bInvestigatingPlayer = false;
+	PatrolIndex = 0;
+	PatrolDirection = 1;
+
+	if (IsValid(GuardPawn))
+	{
+		GuardPawn->ResetToStart();
+	}
+
+	EnterPatrol();
 }
 
 void AHeistGuardController::OnPossess(APawn* InPawn)

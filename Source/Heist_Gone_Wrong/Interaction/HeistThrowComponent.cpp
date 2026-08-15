@@ -2,6 +2,7 @@
 
 #include "HeistThrowComponent.h"
 #include "HeistThrowable.h"
+#include "HeistObjectiveSubsystem.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Actor.h"
 #include "DrawDebugHelpers.h"
@@ -38,6 +39,26 @@ void UHeistThrowComponent::BeginPlay()
 				TEXT("%s: CarrySocket '%s' not found on '%s'. Carried objects will snap to that component's origin instead of the hand."),
 				*GetNameSafe(Owner), *CarrySocket.ToString(), *GetNameSafe(CachedAttachParent));
 		}
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UHeistObjectiveSubsystem* Objective = World->GetSubsystem<UHeistObjectiveSubsystem>())
+		{
+			Objective->OnRunReset.AddDynamic(this, &UHeistThrowComponent::HandleRunReset);
+		}
+	}
+}
+
+void UHeistThrowComponent::HandleRunReset()
+{
+	// Abandon any wind-up and let go. The throwable returns itself to its spawn.
+	bIsCharging = false;
+
+	if (CarriedThrowable != nullptr)
+	{
+		CarriedThrowable = nullptr;
+		OnCarriedChanged.Broadcast(nullptr);
 	}
 }
 

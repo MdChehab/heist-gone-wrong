@@ -31,6 +31,9 @@ public:
 	 */
 	void SetFaceControlRotation(bool bEnabled);
 
+	/** Teleport back to the spawn transform for a checkpoint restart */
+	void ResetToStart();
+
 	const TArray<TObjectPtr<AActor>>& GetPatrolPoints() const { return PatrolPoints; }
 	FORCEINLINE float GetWaitTimeAtPoint() const { return WaitTimeAtPoint; }
 	FORCEINLINE bool ShouldLoopPatrol() const { return bLoopPatrol; }
@@ -56,4 +59,9 @@ protected:
 	/** Patrol walk speed. Guards move slowly on patrol; investigate/chase speeds come in W4. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Movement", meta=(ClampMin="0", UIMin="0"))
 	float PatrolSpeed = 200.f;
+
+private:
+
+	/** Spawn transform, captured in BeginPlay, restored on a checkpoint restart */
+	FTransform StartTransform;
 };

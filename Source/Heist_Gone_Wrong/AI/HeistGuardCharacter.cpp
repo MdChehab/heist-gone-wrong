@@ -26,10 +26,18 @@ void AHeistGuardCharacter::BeginPlay()
 
 	// Constructor value may be overridden on the Blueprint; apply it at runtime.
 	GetCharacterMovement()->MaxWalkSpeed = PatrolSpeed;
+
+	StartTransform = GetActorTransform();
 }
 
 void AHeistGuardCharacter::SetFaceControlRotation(bool bEnabled)
 {
 	bUseControllerRotationYaw = bEnabled;
 	GetCharacterMovement()->bOrientRotationToMovement = !bEnabled;
+}
+
+void AHeistGuardCharacter::ResetToStart()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+	SetActorTransform(StartTransform, /*bSweep*/ false, nullptr, ETeleportType::TeleportPhysics);
 }

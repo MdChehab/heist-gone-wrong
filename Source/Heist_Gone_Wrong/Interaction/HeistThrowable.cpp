@@ -1,6 +1,7 @@
 // Heist Gone Wrong
 
 #include "HeistThrowable.h"
+#include "HeistObjectiveSubsystem.h"
 #include "Components/StaticMeshComponent.h"
 #include "Perception/AISense_Hearing.h"
 #include "DrawDebugHelpers.h"
@@ -30,6 +31,42 @@ void AHeistThrowable::BeginPlay()
 	Super::BeginPlay();
 
 	MeshComponent->OnComponentHit.AddDynamic(this, &AHeistThrowable::HandleMeshHit);
+
+	SavedTransform = GetActorTransform();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UHeistObjectiveSubsystem* Objective = World->GetSubsystem<UHeistObjectiveSubsystem>())
+		{
+			Objective->OnRunReset.AddDynamic(this, &AHeistThrowable::HandleRunReset);
+			Objective->OnCheckpointSaved.AddDynamic(this, &AHeistThrowable::HandleCheckpointSaved);
+		}
+	}
+}
+
+void AHeistThrowable::HandleCheckpointSaved()
+{
+	// Bank where the object is now, so a restart returns it here, not to spawn.
+	SavedTransform = GetActorTransform();
+}
+
+void AHeistThrowable::HandleRunReset()
+{
+	// Drop out of the player's hand if carried, and return to the spawn spot as
+	// a free physics object. The throw component clears its own reference.
+	if (bIsHeld)
+	{
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	}
+
+	bIsHeld = false;
+	bAwaitingImpactNoise = false;
+
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	SetActorTransform(SavedTransform, /*bSweep*/ false, nullptr, ETeleportType::TeleportPhysics);
+	MeshComponent->SetSimulatePhysics(true);
+	MeshComponent->SetPhysicsLinearVelocity(FVector::ZeroVector);
+	MeshComponent->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 }
 
 FText AHeistThrowable::GetInteractionPrompt_Implementation() const

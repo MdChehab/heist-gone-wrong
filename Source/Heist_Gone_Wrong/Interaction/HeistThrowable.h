@@ -86,7 +86,18 @@ protected:
 	void HandleMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
+	/** Return to the banked spot as a free physics object on a checkpoint restart */
+	UFUNCTION()
+	void HandleRunReset();
+
+	/** Bank the current world transform when a checkpoint is reached */
+	UFUNCTION()
+	void HandleCheckpointSaved();
+
 private:
+
+	/** World transform banked at the last checkpoint (spawn, initially) */
+	FTransform SavedTransform;
 
 	/** True from PickUp until Throw */
 	UPROPERTY(Transient)

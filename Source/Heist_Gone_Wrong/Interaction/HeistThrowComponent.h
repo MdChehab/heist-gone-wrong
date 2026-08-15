@@ -118,6 +118,10 @@ private:
 	/** Shared launch path used by ReleaseCharge */
 	bool LaunchCarried(float Speed);
 
+	/** Let go of any carried object on a checkpoint restart (it resets itself) */
+	UFUNCTION()
+	void HandleRunReset();
+
 	/**
 	 *  Strong reference on purpose: while carried, this component is the only
 	 *  thing keeping the throwable referenced, so it must not be collected.

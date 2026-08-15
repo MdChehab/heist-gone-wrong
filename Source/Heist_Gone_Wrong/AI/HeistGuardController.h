@@ -46,6 +46,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Guard")
 	EGuardState GetGuardState() const { return GuardState; }
 
+	/** Forget the player and return to the patrol start (checkpoint restart) */
+	UFUNCTION()
+	void ResetToPatrol();
+
 protected:
 
 	virtual void OnPossess(APawn* InPawn) override;
