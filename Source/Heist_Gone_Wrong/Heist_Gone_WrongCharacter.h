@@ -109,6 +109,22 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Movement|Roll")
 	bool bIsRolling = false;
 
+	/** Hearing range, in cm, of footstep noise while running. Guards within it hear you. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0", UIMin="0"))
+	float RunNoiseRange = 1100.f;
+
+	/** Hearing range of footstep noise while walking. 0 = silent (the default). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0", UIMin="0"))
+	float WalkNoiseRange = 0.f;
+
+	/** Seconds between footstep noise emissions while moving */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0.05", UIMin="0.05"))
+	float FootstepNoiseInterval = 0.35f;
+
+	/** Loudness passed to the hearing sense for footsteps */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0", UIMin="0"))
+	float FootstepNoiseLoudness = 1.f;
+
 private:
 
 	/**
@@ -118,6 +134,12 @@ private:
 	 */
 	float DefaultGroundFriction = 8.f;
 	float DefaultBrakingDecelerationWalking = 2000.f;
+
+	/** Timer that periodically emits footstep noise while running */
+	FTimerHandle FootstepNoiseTimerHandle;
+
+	/** Timer callback: report a hearing noise sized by the current movement state */
+	void EmitFootstepNoise();
 
 protected:
 

@@ -15,6 +15,7 @@
 #include "Interaction/HeistThrowable.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Perception/AISense_Hearing.h"
 #include "Heist_Gone_Wrong.h"
 
 AHeist_Gone_WrongCharacter::AHeist_Gone_WrongCharacter()
@@ -78,6 +79,48 @@ void AHeist_Gone_WrongCharacter::BeginPlay()
 	// Remember what the roll has to put back.
 	DefaultGroundFriction = GetCharacterMovement()->GroundFriction;
 	DefaultBrakingDecelerationWalking = GetCharacterMovement()->BrakingDecelerationWalking;
+
+	// Footstep noise runs on a light timer rather than Tick.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			FootstepNoiseTimerHandle, this, &AHeist_Gone_WrongCharacter::EmitFootstepNoise,
+			FootstepNoiseInterval, /*bLoop*/ true);
+	}
+}
+
+void AHeist_Gone_WrongCharacter::EmitFootstepNoise()
+{
+	// Silent unless actually moving on the ground.
+	if (GetVelocity().Size2D() < 10.f || GetCharacterMovement()->IsFalling())
+	{
+		return;
+	}
+
+	// Crouching is always silent; walking is silent by default (WalkNoiseRange 0);
+	// running is loud. Guards hear this through the same AI hearing sense that
+	// picks up thrown objects, so the investigate behaviour is already wired.
+	float NoiseRange = 0.f;
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		NoiseRange = 0.f;
+	}
+	else if (bIsRunning)
+	{
+		NoiseRange = RunNoiseRange;
+	}
+	else
+	{
+		NoiseRange = WalkNoiseRange;
+	}
+
+	if (NoiseRange <= 0.f)
+	{
+		return;
+	}
+
+	UAISense_Hearing::ReportNoiseEvent(
+		this, GetActorLocation(), FootstepNoiseLoudness, this, NoiseRange, TEXT("Footstep"));
 }
 
 void AHeist_Gone_WrongCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
