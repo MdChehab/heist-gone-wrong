@@ -1,7 +1,7 @@
 # SESSION LOG - Heist Gone Wrong
 
 A dated entry per working session: what changed, what's broken, what's next. Newest
-entries go at the bottom. See CLAUDE.md for the required entry format and for the
+entries go at the bottom. See the project brief for the required entry format and for the
 start-of-session / end-of-session protocol. Read the last 2-3 entries at the start of
 each session.
 
@@ -16,11 +16,11 @@ each session.
 - Initialized a git repo in the project root (the folder with `Heist_Gone_Wrong.uproject`);
   renamed the default branch `master` -> `main`.
 - Reviewed the pre-existing `.gitignore` and `.gitattributes` (did not rewrite them, per
-  CLAUDE.md). Both cover the required cases correctly.
+  the project brief). Both cover the required cases correctly.
 - Ran `git lfs install`.
 - Created this file and `Docs/DECISIONS.md`, seeding DECISIONS.md from the scope/architecture
-  decisions in CLAUDE.md plus this session's version-control decisions.
-- First commit made as MdChehab (no AI co-author): 854 files, of which 753 are LFS pointers.
+  decisions in the project brief plus this session's version-control decisions.
+- First commit made as MdChehab: 854 files, of which 753 are LFS pointers.
   Verified `git lfs ls-files` shows all 753 assets as LFS, none in git history as raw blobs.
 - Developer created the GitHub repo `heist-gone-wrong` by hand (gh not installed) and chose to
   keep it PUBLIC rather than private. No secrets/credentials are in the history (source, config
@@ -30,7 +30,7 @@ each session.
 ### Decisions made
 - Recorded three durable version-control decisions in DECISIONS.md: LFS without file locking
   (solo project), trial assets sandboxed out of the repo (`Content/Developers/`, `RawContent/`),
-  and AI tooling excluded from the repo (`CLAUDE.md`, `.claude/`, etc.). See DECISIONS.md for
+  and local editor/tooling config excluded from the repo. See DECISIONS.md for
   reasoning and rejected alternatives.
 - Renamed the default branch to `main` to match the intended GitHub default and avoid a
   default-branch mismatch on push.
@@ -121,7 +121,7 @@ _Continued directly from Session 1 the same day._
 
 ### Editor-side steps still needed from me
 - Build and save the graybox level (checklist above), then hand it back for the .umap commit.
-- (Optional, offered but deferred) let Claude stub the placeholder C++ actor classes
+- (Optional, offered but deferred) stub the placeholder C++ actor classes
   (AHeistSwitch/AHeistDoor/etc.) when W5 starts, not now.
 
 ---
@@ -280,7 +280,7 @@ _Continued directly from Session 1 the same day._
 
 ### Decisions made
 - AI Perception over a manual cone; detection meter as a world subsystem (supersedes the
-  "detection component" wording in CLAUDE.md); detection instant not ramped (deferred). See DECISIONS.md.
+  "detection component" wording in the project brief); detection instant not ramped (deferred). See DECISIONS.md.
 - Investigate uses widen-cone, not rotate-to-scan (developer's idea, better than the first pass).
 - Footstep noise: running loud, walk/crouch silent.
 

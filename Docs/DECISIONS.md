@@ -3,7 +3,7 @@
 The durable "why" for this project. Architecture, design decisions, trade-offs, and
 rejected options. Organized by system, not chronologically. Each entry records the
 decision, the reasoning, the alternatives rejected, and the date. Change this only
-when a decision actually changes. See CLAUDE.md for how this file is used.
+when a decision actually changes. See the project brief for how this file is used.
 
 ---
 
@@ -17,7 +17,7 @@ broad feature set.
 A finished, coherent loop demonstrates more and de-risks the graded deliverables (build,
 report, presentation) better than a pile of half-working systems.
 **Rejected:** Wider feature sets (multiple floors, several puzzle types, camera systems,
-coordinated multi-guard AI). Explicitly out of scope; see the Out of Scope list in CLAUDE.md.
+coordinated multi-guard AI). Explicitly out of scope; see the Out of Scope list in the project brief.
 
 ### No combat - 2026-07-11
 **Decision:** The game has no combat of any kind. The player relies on stealth, movement,
@@ -163,7 +163,7 @@ so this would fight the input); a full aim stance (W6 polish).
 `AHeistGuardCharacter` holds mesh, movement and the patrol waypoint data;
 `AHeistGuardController` decides where to go and issues navmesh moves. Movement is
 event-driven through `OnMoveCompleted`, never Tick.
-**Reasoning:** CLAUDE.md explicitly calls for "a simple state machine (Patrol / Investigate /
+**Reasoning:** the project brief explicitly calls for "a simple state machine (Patrol / Investigate /
 Alerted)" and a C++-first architecture. A C++ machine stays diffable and reviewable in the
 repo; Behavior Trees and StateTrees are binary `.uasset` that fight the DRY/reviewability
 priorities. For three perception-driven states this is less machinery than a Blackboard + BT
@@ -204,7 +204,7 @@ a C++ workaround to force acceleration onto a nav-driven pawn (fights the moveme
 **Decision:** The guard senses the player with a `UAIPerceptionComponent` (Sight + Hearing
 configs) on the controller, not a hand-rolled cone. Sight gives the cone and the line-of-sight
 trace; hearing consumes the `ReportNoiseEvent` calls that throwables and footsteps already make.
-**Reasoning:** CLAUDE.md calls for the event-driven Perception system over polling. Sight's
+**Reasoning:** the project brief calls for the event-driven Perception system over polling. Sight's
 built-in LoS trace is exactly the "crouch breaks line of sight at low cover" mechanic for free -
 it traces to the player's (crouch-lowered) body point, so low cover hides a crouched player.
 Sight affiliation must include neutrals (`bDetectNeutrals=true`) or the unteamed player is
@@ -218,12 +218,12 @@ be a per-frame or timer poll).
 see/lost; it fills while any guard sees the player, drains otherwise, and fires `OnPlayerDetected`
 at full (W5 wires fail + checkpoint restart). Fill/drain rates are tunable; updates run on a
 0.1s timer only while active.
-**Reasoning:** CLAUDE.md's class list said "detection component," but its own rule is that
+**Reasoning:** the project brief's class list said "detection component," but its own rule is that
 game-wide state belongs in a subsystem, not on an actor. The meter is exactly that - one value
 many guards write and the HUD reads - so a subsystem avoids casting between guards and the player
 and gives the HUD a single source of truth. Superseding the "component" wording deliberately.
 **Rejected:** A component on the player or guard (per-actor, needs cross-casting); piling it on
-the GameMode (CLAUDE.md warns against this).
+the GameMode (the project brief warns against this).
 
 ### Detection is instant, not ramped (for now) - 2026-07-21
 **Decision:** Any sight of the player immediately enters Alerted and starts filling the meter;
@@ -252,7 +252,7 @@ checkpoint closed again on a catch. Now progress banked at a checkpoint (door op
 taken) survives a catch; progress made after it correctly reverts.
 **Rejected:** Checkpoint saves position only (inconsistent - respawn past a now-closed door);
 a full reset-to-start on every fail regardless of checkpoint (defeats the checkpoint); putting
-the flow on the GameMode (CLAUDE.md steers game-wide state to subsystems).
+the flow on the GameMode (the project brief steers game-wide state to subsystems).
 
 ### Puzzle/objective actors are interface-decoupled - 2026-07-21
 **Decision:** `IHeistActivatable` (Activate/Deactivate) sits between the switch and the door;
@@ -261,7 +261,7 @@ reusing the W2 interaction system. The artifact is an `IHeistInteractable`; exit
 are trigger volumes.
 **Reasoning:** The switch never needs to know it drives a door - the same switch could disable a
 camera later (a stretch goal) with no switch change. Reuses the interaction contract rather than
-a parallel system. Matches CLAUDE.md's "interfaces for can-do-X contracts".
+a parallel system. Matches the project brief's "interfaces for can-do-X contracts".
 **Rejected:** A direct switch->door reference typed to the door class (locks the switch to doors).
 
 ---
@@ -309,10 +309,11 @@ time, not to run. This keeps the repo to assets actually in use.
 **Rejected:** Committing every imported asset. Bloats LFS storage and history with
 throwaway trial content.
 
-### AI tooling excluded from the repo - 2026-07-11
-**Decision:** Git-ignore `CLAUDE.md`, `CLAUDE.local.md`, `.claude/`, and `.mcp.json`.
-**Reasoning:** These configure the local AI/dev workflow, not the game. They are personal,
+### Local editor/tooling config excluded from the repo - 2026-07-11
+**Decision:** Git-ignore local editor and tooling configuration files that are personal
+to the workstation rather than part of the game.
+**Reasoning:** These configure the local dev workflow, not the game. They are personal,
 change often, and add nothing to a build or to a collaborator. The durable project state
 lives in the tracked `Docs/DECISIONS.md` and `Docs/SESSION_LOG.md` instead.
-**Rejected:** Tracking the AI config in-repo. Couples the shipped project to a specific
-tooling setup and leaks local paths/preferences into history.
+**Rejected:** Tracking local tooling config in-repo. Couples the shipped project to a specific
+setup and leaks local paths/preferences into history.

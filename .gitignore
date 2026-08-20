@@ -101,12 +101,6 @@ Build/*/**
 Thumbs.db
 *.stackdump
 
-# Claude / AI tooling (kept out of the repo)
-CLAUDE.md
-CLAUDE.local.md
-.claude/
-.mcp.json
-
 # --------------------------------------------------------------
 #  Experimental / source-only areas (kept OUT of the repo)
 # --------------------------------------------------------------
