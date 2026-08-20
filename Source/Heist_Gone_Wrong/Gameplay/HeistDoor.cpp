@@ -3,6 +3,7 @@
 #include "HeistDoor.h"
 #include "HeistObjectiveSubsystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
 AHeistDoor::AHeistDoor()
@@ -73,6 +74,12 @@ void AHeistDoor::SetTargetOpen(bool bOpen)
 
 	bTargetOpen = bOpen;
 	SetActorTickEnabled(true);
+
+	USoundBase* Sound = bOpen ? OpenSound : CloseSound;
+	if (Sound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
+	}
 }
 
 void AHeistDoor::OpenDoor()

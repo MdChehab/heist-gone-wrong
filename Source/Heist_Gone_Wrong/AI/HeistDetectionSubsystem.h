@@ -57,9 +57,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category="Detection", meta=(ClampMin="0", UIMin="0"))
 	float DrainRatePerSecond = 0.35f;
 
-	/** Draw the meter on screen while testing */
+	/** Draw the meter on screen while testing (off by default; the HUD shows the real meter) */
 	UPROPERTY(BlueprintReadWrite, Category="Detection")
-	bool bDebugMeter = true;
+	bool bDebugMeter = false;
 
 	//~ Begin USubsystem
 	virtual void Deinitialize() override;

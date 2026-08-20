@@ -29,6 +29,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UBoxComponent> Trigger;
 
+	/** HUD hint shown when the player reaches the exit without the artifact */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Exit")
+	FText NeedArtifactHint;
+
 private:
 
 	UFUNCTION()

@@ -9,6 +9,7 @@
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
+#include "TimerManager.h"
 
 void UHeistObjectiveSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -60,6 +61,29 @@ void UHeistObjectiveSubsystem::SetCheckpoint(const FTransform& NewCheckpoint)
 	OnCheckpointSaved.Broadcast();
 }
 
+void UHeistObjectiveSubsystem::ShowHint(const FText& Message, float Duration)
+{
+	CurrentHint = Message;
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			HintTimerHandle, this, &UHeistObjectiveSubsystem::ClearHint, FMath::Max(Duration, 0.1f), false);
+	}
+}
+
+void UHeistObjectiveSubsystem::ClearHint()
+{
+	CurrentHint = FText::GetEmpty();
+}
+
+FText UHeistObjectiveSubsystem::GetObjectiveText() const
+{
+	return bHasArtifact
+		? NSLOCTEXT("Heist", "ObjectiveEscape", "Escape to the exit")
+		: NSLOCTEXT("Heist", "ObjectiveSteal", "Steal the artifact");
+}
+
 void UHeistObjectiveSubsystem::PickUpArtifact()
 {
 	if (RunState != EHeistRunState::Playing || bHasArtifact)
@@ -69,13 +93,6 @@ void UHeistObjectiveSubsystem::PickUpArtifact()
 
 	bHasArtifact = true;
 	OnObjectiveChanged.Broadcast(NSLOCTEXT("Heist", "ObjectiveEscape", "Escape to the exit"));
-
-#if !UE_BUILD_SHIPPING
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, TEXT("Artifact acquired - reach the exit"));
-	}
-#endif
 }
 
 void UHeistObjectiveSubsystem::NotifyReachedExit()
@@ -90,13 +107,6 @@ void UHeistObjectiveSubsystem::CompleteRun()
 {
 	RunState = EHeistRunState::Won;
 	OnRunStateChanged.Broadcast(RunState);
-
-#if !UE_BUILD_SHIPPING
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("HEIST COMPLETE - you escaped with the artifact"));
-	}
-#endif
 }
 
 void UHeistObjectiveSubsystem::HandlePlayerDetected()
@@ -126,13 +136,6 @@ void UHeistObjectiveSubsystem::RestartFromCheckpoint()
 	OnObjectiveChanged.Broadcast(bHasArtifact
 		? NSLOCTEXT("Heist", "ObjectiveEscape", "Escape to the exit")
 		: NSLOCTEXT("Heist", "ObjectiveSteal", "Steal the artifact"));
-
-#if !UE_BUILD_SHIPPING
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Orange, TEXT("DETECTED - restarting from checkpoint"));
-	}
-#endif
 }
 
 void UHeistObjectiveSubsystem::RespawnPlayerAtCheckpoint()

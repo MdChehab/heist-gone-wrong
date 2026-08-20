@@ -3,6 +3,7 @@
 #include "HeistArtifact.h"
 #include "HeistObjectiveSubsystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
 AHeistArtifact::AHeistArtifact()
@@ -50,6 +51,11 @@ void AHeistArtifact::Interact_Implementation(AActor* Interactor)
 	if (Objective)
 	{
 		Objective->PickUpArtifact();
+	}
+
+	if (PickupSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
 	}
 
 	SetTaken(true);

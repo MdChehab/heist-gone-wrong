@@ -9,6 +9,7 @@
 
 class UStaticMeshComponent;
 class USceneComponent;
+class USoundBase;
 
 /**
  *  A pickup-and-throw object. Picking it up is an interaction; landing after a
@@ -77,6 +78,10 @@ protected:
 	/** Ignore landings gentler than this so a nudge does not alert anyone */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Throwable", meta=(ClampMin="0", UIMin="0"))
 	float MinImpactSpeedForNoise = 250.f;
+
+	/** Played at the landing point when the throw makes its noise */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Throwable")
+	TObjectPtr<USoundBase> ImpactSound;
 
 	/** Reports the noise event guards listen for. Override to add audio/VFX. */
 	UFUNCTION(BlueprintNativeEvent, Category="Throwable")

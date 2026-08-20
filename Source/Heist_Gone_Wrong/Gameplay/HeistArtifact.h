@@ -9,6 +9,7 @@
 
 class UStaticMeshComponent;
 class UHeistObjectiveSubsystem;
+class USoundBase;
 
 /**
  *  The stealable artifact. Interacting with it takes it (advancing the
@@ -39,6 +40,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artifact")
 	FText InteractionPrompt;
+
+	/** Played when the artifact is taken */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Artifact")
+	TObjectPtr<USoundBase> PickupSound;
 
 private:
 

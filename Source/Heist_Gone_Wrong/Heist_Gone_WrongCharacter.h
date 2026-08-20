@@ -12,6 +12,8 @@ class UCameraComponent;
 class UInputAction;
 class UHeistInteractionComponent;
 class UHeistThrowComponent;
+class USoundBase;
+class UAnimMontage;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -109,6 +111,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Movement|Roll")
 	bool bIsRolling = false;
 
+	/** Roll animation played on DoRoll. Use an in-place roll; movement is code-driven. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Roll")
+	TObjectPtr<UAnimMontage> RollMontage;
+
+	/** Throw animation played when the carried object is launched */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction")
+	TObjectPtr<UAnimMontage> ThrowMontage;
+
 	/** Hearing range, in cm, of footstep noise while running. Guards within it hear you. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0", UIMin="0"))
 	float RunNoiseRange = 1100.f;
@@ -124,6 +134,22 @@ protected:
 	/** Loudness passed to the hearing sense for footsteps */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0", UIMin="0"))
 	float FootstepNoiseLoudness = 1.f;
+
+	/** Footstep sound variations; one is chosen at random each step. Silent while crouched. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise")
+	TArray<TObjectPtr<USoundBase>> FootstepSounds;
+
+	/** Base footstep volume (0..2). Kept low so steps stay subtle. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0", UIMin="0", ClampMax="2", UIMax="2"))
+	float FootstepVolume = 0.3f;
+
+	/** Lowest random pitch applied per step */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0.1", UIMin="0.1"))
+	float FootstepPitchMin = 0.9f;
+
+	/** Highest random pitch applied per step, so no two steps sound identical */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement|Noise", meta=(ClampMin="0.1", UIMin="0.1"))
+	float FootstepPitchMax = 1.12f;
 
 private:
 

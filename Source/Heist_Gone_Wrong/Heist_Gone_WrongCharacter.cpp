@@ -16,6 +16,7 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "Perception/AISense_Hearing.h"
+#include "Kismet/GameplayStatics.h"
 #include "Heist_Gone_Wrong.h"
 
 AHeist_Gone_WrongCharacter::AHeist_Gone_WrongCharacter()
@@ -97,11 +98,31 @@ void AHeist_Gone_WrongCharacter::EmitFootstepNoise()
 		return;
 	}
 
+	const bool bCrouched = GetCharacterMovement()->IsCrouching();
+
+	// Footstep SOUND (player audio feedback) plays whenever moving on foot -
+	// quieter when crouching, louder when running. This is separate from the
+	// guard-hearing noise below, which only a run produces: the player still
+	// hears their crouch-steps, but guards do not.
+	if (FootstepSounds.Num() > 0)
+	{
+		// A random variation and a random pitch each step, so it does not sound
+		// like the same click on a loop.
+		USoundBase* Step = FootstepSounds[FMath::RandRange(0, FootstepSounds.Num() - 1)];
+		if (Step)
+		{
+			const float StateScale = bCrouched ? 0.4f : (bIsRunning ? 1.f : 0.7f);
+			const float Volume = FootstepVolume * StateScale;
+			const float Pitch = FMath::FRandRange(FootstepPitchMin, FootstepPitchMax);
+			UGameplayStatics::PlaySoundAtLocation(this, Step, GetActorLocation(), Volume, Pitch);
+		}
+	}
+
 	// Crouching is always silent; walking is silent by default (WalkNoiseRange 0);
 	// running is loud. Guards hear this through the same AI hearing sense that
 	// picks up thrown objects, so the investigate behaviour is already wired.
 	float NoiseRange = 0.f;
-	if (GetCharacterMovement()->IsCrouching())
+	if (bCrouched)
 	{
 		NoiseRange = 0.f;
 	}
@@ -184,6 +205,14 @@ void AHeist_Gone_WrongCharacter::Look(const FInputActionValue& Value)
 
 void AHeist_Gone_WrongCharacter::DoMove(float Right, float Forward)
 {
+	// Movement is locked during a roll. The roll drives its own motion with
+	// friction disabled, so any added input would not decelerate and the
+	// character would slide.
+	if (bIsRolling)
+	{
+		return;
+	}
+
 	if (GetController() != nullptr)
 	{
 		// find out which way is forward
@@ -286,6 +315,13 @@ void AHeist_Gone_WrongCharacter::DoThrowRelease()
 	}
 
 	ThrowComponent->ReleaseCharge();
+
+	// Cosmetic throw animation over the top (needs the DefaultSlot in the anim
+	// blueprint). The object already launched; refine timing later with a notify.
+	if (ThrowMontage)
+	{
+		PlayAnimMontage(ThrowMontage);
+	}
 }
 
 void AHeist_Gone_WrongCharacter::DoRoll()
@@ -296,50 +332,35 @@ void AHeist_Gone_WrongCharacter::DoRoll()
 		return;
 	}
 
-	// Roll where the player is actually moving; fall back to facing when idle.
-	FVector RollDirection = GetVelocity().GetSafeNormal2D();
-	if (RollDirection.IsNearlyZero())
-	{
-		RollDirection = GetActorForwardVector().GetSafeNormal2D();
-	}
-
 	bIsRolling = true;
 
-	UCharacterMovementComponent* Movement = GetCharacterMovement();
-
-	// A ground launch is scrubbed off almost immediately by friction, braking
-	// and the walk speed cap, which makes an otherwise correct roll read as a
-	// tiny stutter. Suspend all three for the duration and restore in EndRoll.
-	// Both speed caps are raised so a roll works crouched or standing without
-	// forcing the player out of their stance.
-	Movement->GroundFriction = 0.f;
-	Movement->BrakingDecelerationWalking = 0.f;
-	Movement->MaxWalkSpeed = RollSpeed;
-	Movement->MaxWalkSpeedCrouched = RollSpeed;
-
-	// Programmatic launch for now. Swap to a root-motion montage once a roll
-	// animation exists; the state flag and lockout stay the same either way.
-	LaunchCharacter(RollDirection * RollSpeed, /*bXYOverride*/ true, /*bZOverride*/ false);
+	// The roll's movement comes from the montage's ROOT MOTION - the animation
+	// moves the character, so motion matches the feet exactly and never slides.
+	// No launch and no friction changes. Requires a root-motion roll clip and
+	// the anim blueprint's Root Motion Mode set to use montages. Input stays
+	// locked (see DoMove) for the whole clip.
+	float RollTime = RollDuration;
+	if (RollMontage)
+	{
+		const float MontageLength = PlayAnimMontage(RollMontage);
+		if (MontageLength > 0.f)
+		{
+			RollTime = MontageLength;
+		}
+	}
 
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
-			RollTimerHandle, this, &AHeist_Gone_WrongCharacter::EndRoll, RollDuration, /*bLoop*/ false);
+			RollTimerHandle, this, &AHeist_Gone_WrongCharacter::EndRoll, RollTime, /*bLoop*/ false);
 	}
 }
 
 void AHeist_Gone_WrongCharacter::EndRoll()
 {
+	// Root motion drives the roll, so there is no launch/friction to restore -
+	// just re-enable movement input.
 	bIsRolling = false;
-
-	UCharacterMovementComponent* Movement = GetCharacterMovement();
-
-	Movement->GroundFriction = DefaultGroundFriction;
-	Movement->BrakingDecelerationWalking = DefaultBrakingDecelerationWalking;
-
-	// Back to whichever pace the player was in before the roll.
-	Movement->MaxWalkSpeed = bIsRunning ? RunSpeed : WalkSpeed;
-	Movement->MaxWalkSpeedCrouched = CrouchSpeed;
 }
 
 void AHeist_Gone_WrongCharacter::DoToggleCrouch()

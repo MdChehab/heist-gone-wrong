@@ -131,6 +131,7 @@ void AHeistGuardController::EnterPatrol()
 	SetVisionWide(false);
 	if (IsValid(GuardPawn))
 	{
+		GuardPawn->ApplyPatrolSpeed();
 		GuardPawn->SetFaceControlRotation(false);
 	}
 
@@ -147,6 +148,10 @@ void AHeistGuardController::EnterPatrol()
 
 void AHeistGuardController::EnterInvestigate(const FVector& PointOfInterest, bool bFromNoise)
 {
+	// Bark a suspicious line only when first becoming suspicious, not when a new
+	// noise re-targets a guard that is already investigating.
+	const bool bWasInvestigating = (GuardState == EGuardState::Investigate);
+
 	GuardState = EGuardState::Investigate;
 	bInvestigatingPlayer = !bFromNoise;
 	ClearWaitTimer();
@@ -155,7 +160,12 @@ void AHeistGuardController::EnterInvestigate(const FVector& PointOfInterest, boo
 	SetVisionWide(false);
 	if (IsValid(GuardPawn))
 	{
+		GuardPawn->ApplyInvestigateSpeed();
 		GuardPawn->SetFaceControlRotation(false);
+		if (!bWasInvestigating)
+		{
+			GuardPawn->PlaySuspicionBark();
+		}
 	}
 
 	// Push the destination a little past the point of interest, along the
@@ -183,20 +193,31 @@ void AHeistGuardController::EnterInvestigate(const FVector& PointOfInterest, boo
 
 void AHeistGuardController::EnterAlerted()
 {
+	// Bark an alert line only on the transition into Alerted, not on every
+	// perception refresh while the guard already sees the player.
+	const bool bWasAlerted = (GuardState == EGuardState::Alerted);
+
 	GuardState = EGuardState::Alerted;
 	ClearWaitTimer();
 	SetVisionWide(false);
 
-	// Stand and watch: no combat, so the guard holds position and faces the
-	// player while the detection meter fills. Losing sight drops it to Investigate.
-	StopMovement();
+	if (!bWasAlerted && IsValid(GuardPawn))
+	{
+		GuardPawn->PlayAlertBark();
+	}
+
+	// Advance on the player rather than standing still: no combat, but the guard
+	// closes in and faces them while the detection meter fills. MoveToActor
+	// tracks the moving player; losing sight drops the guard to Investigate.
+	if (IsValid(GuardPawn))
+	{
+		GuardPawn->ApplyChaseSpeed();
+		GuardPawn->SetFaceControlRotation(true);
+	}
 	if (SeenPlayer.IsValid())
 	{
 		SetFocus(SeenPlayer.Get(), EAIFocusPriority::Gameplay);
-	}
-	if (IsValid(GuardPawn))
-	{
-		GuardPawn->SetFaceControlRotation(true);
+		MoveToActor(SeenPlayer.Get(), ChaseAcceptanceRadius);
 	}
 	ReportSeesPlayer(true);
 
@@ -305,10 +326,11 @@ void AHeistGuardController::StartLookAround()
 	}
 
 	// Widen the cone so the guard takes in the whole area without turning (no
-	// slide), then resume patrol after the look-around beat. A future
-	// investigation animation plays over this window. A heard noise holds the
-	// guard longer than a player hunt, so the distraction actually buys time.
+	// slide), then resume patrol after the look-around beat. The look-around
+	// animation plays over this window. A heard noise holds the guard longer
+	// than a player hunt, so the distraction actually buys time.
 	SetVisionWide(true);
+	GuardPawn->PlayInvestigateMontage();
 
 	const float BaseTime = bInvestigatingPlayer ? LookAroundTime : NoiseInvestigateTime;
 	const float LookTime = FMath::Max(BaseTime, KINDA_SMALL_NUMBER);

@@ -43,6 +43,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Interaction")
 	AActor* GetFocusedActor() const { return FocusedActor.Get(); }
 
+	/** True while something is in focus. Bind the prompt's visibility to this. */
+	UFUNCTION(BlueprintCallable, Category="Interaction")
+	bool IsFocusing() const { return FocusedActor.IsValid(); }
+
+	/** Prompt text of the focused interactable for the HUD, or empty */
+	UFUNCTION(BlueprintCallable, Category="Interaction")
+	FText GetCurrentPrompt() const;
+
 protected:
 
 	virtual void BeginPlay() override;

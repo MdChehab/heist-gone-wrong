@@ -6,6 +6,10 @@
 #include "GameFramework/Character.h"
 #include "HeistGuardCharacter.generated.h"
 
+class USoundBase;
+class UAudioComponent;
+class UAnimMontage;
+
 /**
  *  The guard's body: mesh, movement and the patrol route data. The behaviour
  *  (deciding where to go and when) lives in AHeistGuardController, so this class
@@ -34,6 +38,20 @@ public:
 	/** Teleport back to the spawn transform for a checkpoint restart */
 	void ResetToStart();
 
+	/** Set the movement speed for the current behaviour state */
+	void ApplyPatrolSpeed();
+	void ApplyInvestigateSpeed();
+	void ApplyChaseSpeed();
+
+	/** Bark a random alert line when the guard spots the player (called on Alerted) */
+	void PlayAlertBark();
+
+	/** Bark a random suspicious line when the guard investigates (called on Investigate) */
+	void PlaySuspicionBark();
+
+	/** Play the look-around animation while surveying an investigation point */
+	void PlayInvestigateMontage();
+
 	const TArray<TObjectPtr<AActor>>& GetPatrolPoints() const { return PatrolPoints; }
 	FORCEINLINE float GetWaitTimeAtPoint() const { return WaitTimeAtPoint; }
 	FORCEINLINE bool ShouldLoopPatrol() const { return bLoopPatrol; }
@@ -56,9 +74,38 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Patrol", meta=(ClampMin="0", UIMin="0"))
 	float PatrolAcceptanceRadius = 60.f;
 
-	/** Patrol walk speed. Guards move slowly on patrol; investigate/chase speeds come in W4. */
+	/** Patrol walk speed (slow) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Movement", meta=(ClampMin="0", UIMin="0"))
 	float PatrolSpeed = 200.f;
+
+	/** Move speed heading to a noise / last-known spot (a jog) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Movement", meta=(ClampMin="0", UIMin="0"))
+	float InvestigateSpeed = 380.f;
+
+	/** Move speed approaching a spotted player */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Movement", meta=(ClampMin="0", UIMin="0"))
+	float ChaseSpeed = 460.f;
+
+	/** Lines barked when the guard spots the player (a random one plays). E.g. "Intruder!" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Audio")
+	TArray<TObjectPtr<USoundBase>> AlertBarks;
+
+	/** Lines barked when the guard gets suspicious and investigates. E.g. "Who's there?" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Audio")
+	TArray<TObjectPtr<USoundBase>> SuspicionBarks;
+
+	/** Look-around animation played while surveying an investigation point */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Guard|Animation")
+	TObjectPtr<UAnimMontage> InvestigateMontage;
+
+private:
+
+	/** Pick a random line from Barks and play it, cutting off any bark still playing */
+	void PlayBark(const TArray<TObjectPtr<USoundBase>>& Barks);
+
+	/** The bark currently playing on this guard, so a new one can interrupt it */
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> ActiveBark;
 
 private:
 

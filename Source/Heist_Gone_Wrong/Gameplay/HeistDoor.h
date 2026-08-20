@@ -8,6 +8,7 @@
 #include "HeistDoor.generated.h"
 
 class UStaticMeshComponent;
+class USoundBase;
 
 /**
  *  A door that slides/swings open when activated (by a switch) and closes when
@@ -65,6 +66,14 @@ protected:
 	/** Whether the door begins open */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
 	bool bStartsOpen = false;
+
+	/** Played when the door starts opening */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door|Audio")
+	TObjectPtr<USoundBase> OpenSound;
+
+	/** Played when the door starts closing */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door|Audio")
+	TObjectPtr<USoundBase> CloseSound;
 
 private:
 

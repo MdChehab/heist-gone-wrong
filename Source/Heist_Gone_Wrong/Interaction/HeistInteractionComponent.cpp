@@ -160,6 +160,16 @@ void UHeistInteractionComponent::SetFocus(AActor* NewFocus)
 	OnFocusChanged.Broadcast(NewFocus, Prompt);
 }
 
+FText UHeistInteractionComponent::GetCurrentPrompt() const
+{
+	AActor* Focus = FocusedActor.Get();
+	if (IsValid(Focus) && Focus->Implements<UHeistInteractable>())
+	{
+		return IHeistInteractable::Execute_GetInteractionPrompt(Focus);
+	}
+	return FText::GetEmpty();
+}
+
 bool UHeistInteractionComponent::TryInteract()
 {
 	AActor* Focus = FocusedActor.Get();

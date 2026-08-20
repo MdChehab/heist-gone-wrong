@@ -16,6 +16,8 @@ AHeistExitVolume::AHeistExitVolume()
 	Trigger->SetBoxExtent(FVector(100.f, 100.f, 100.f));
 	// Overlap pawns, block nothing.
 	Trigger->SetCollisionProfileName(TEXT("Trigger"));
+
+	NeedArtifactHint = NSLOCTEXT("Heist", "NeedArtifact", "Steal the artifact before you can escape");
 }
 
 void AHeistExitVolume::BeginPlay()
@@ -43,10 +45,8 @@ void AHeistExitVolume::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp
 	{
 		Objective->NotifyReachedExit();
 	}
-#if !UE_BUILD_SHIPPING
-	else if (GEngine)
+	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow, TEXT("Steal the artifact before escaping"));
+		Objective->ShowHint(NeedArtifactHint);
 	}
-#endif
 }

@@ -8,6 +8,7 @@
 #include "HeistSwitch.generated.h"
 
 class UStaticMeshComponent;
+class USoundBase;
 
 /**
  *  A switch the player interacts with to drive its linked activatables (the
@@ -47,6 +48,10 @@ protected:
 	/** Toggle the targets on each use; otherwise it is a one-shot activate */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch")
 	bool bToggle = false;
+
+	/** Played when the switch is used */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Switch|Audio")
+	TObjectPtr<USoundBase> ActivateSound;
 
 private:
 

@@ -4,6 +4,7 @@
 #include "HeistActivatable.h"
 #include "HeistObjectiveSubsystem.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
 AHeistSwitch::AHeistSwitch()
@@ -57,6 +58,11 @@ void AHeistSwitch::Interact_Implementation(AActor* Interactor)
 
 void AHeistSwitch::SetTargetsActive(bool bActive, AActor* Activator)
 {
+	if (ActivateSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ActivateSound, GetActorLocation());
+	}
+
 	for (AActor* Target : Targets)
 	{
 		if (IsValid(Target) && Target->Implements<UHeistActivatable>())

@@ -67,6 +67,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Objective")
 	EHeistRunState GetRunState() const { return RunState; }
 
+	/** Current objective line for the HUD (derived from artifact state) */
+	UFUNCTION(BlueprintCallable, Category="Objective")
+	FText GetObjectiveText() const;
+
+	/** Show a transient HUD hint (e.g. the exit warning you have no artifact yet) */
+	UFUNCTION(BlueprintCallable, Category="Objective")
+	void ShowHint(const FText& Message, float Duration = 2.5f);
+
+	/** Current transient hint for the HUD, or empty. Bind a hint text block to this. */
+	UFUNCTION(BlueprintCallable, Category="Objective")
+	FText GetHintText() const { return CurrentHint; }
+
+	/** True while a hint is showing. Bind the hint widget's visibility to this. */
+	UFUNCTION(BlueprintCallable, Category="Objective")
+	bool IsShowingHint() const { return !CurrentHint.IsEmpty(); }
+
 	/** Bind the HUD run-state handler here (win screen in W6) */
 	UPROPERTY(BlueprintAssignable, Category="Objective")
 	FHeistRunStateChanged OnRunStateChanged;
@@ -91,6 +107,7 @@ private:
 
 	void RespawnPlayerAtCheckpoint();
 	void CompleteRun();
+	void ClearHint();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UHeistDetectionSubsystem> DetectionSubsystem;
@@ -103,4 +120,8 @@ private:
 
 	FTransform CheckpointTransform;
 	bool bCheckpointSet = false;
+
+	/** Transient HUD hint text and the timer that clears it */
+	FText CurrentHint;
+	FTimerHandle HintTimerHandle;
 };

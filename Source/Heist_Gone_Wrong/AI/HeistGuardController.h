@@ -105,11 +105,15 @@ protected:
 	 *  without turning. A future investigation animation plays on top of this.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category="Guard|Investigate", meta=(ClampMin="0", ClampMax="180"))
-	float InvestigateVisionHalfAngle = 160.f;
+	float InvestigateVisionHalfAngle = 90.f;
 
-	/** Draw guard state and investigation targets while testing */
+	/** How close the guard gets while approaching a spotted player, in cm */
+	UPROPERTY(EditDefaultsOnly, Category="Guard|Vision", meta=(ClampMin="0"))
+	float ChaseAcceptanceRadius = 150.f;
+
+	/** Draw guard state and investigation targets while testing (off by default) */
 	UPROPERTY(EditDefaultsOnly, Category="Guard|Debug")
-	bool bDebugGuard = true;
+	bool bDebugGuard = false;
 
 private:
 
